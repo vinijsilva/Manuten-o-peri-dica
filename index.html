@@ -556,7 +556,7 @@ const VEHICLES = [
     hasHours:false,
     hasIPVA:true,
     ipvaMonth:7,
-    ipvaTypes:['ipva','licenc'],
+    ipvaTypes:['licenc'],
     boatReg:false,
     specs:[
       ['Tipo','Semi-reboque de carga'],
@@ -639,7 +639,7 @@ const VEHICLES = [
     hasHours:false,
     hasIPVA:true,
     ipvaMonth:4,
-    ipvaTypes:['ipva','licenc'],
+    ipvaTypes:['licenc'],
     boatReg:false,
     specs:[
       ['Tipo','Reboque p/ embarcação'],
@@ -1040,7 +1040,7 @@ function saveModal(){
 
 function renderIPVA(){
   let html = '';
-  html += `<div class="inote">📌 <strong>Estado de São Paulo:</strong> O mês de vencimento segue o último dígito da placa (5 = Maio, 7 = Julho, 4 = Abril). Carretas e semi-reboques em SP <strong>pagam IPVA à alíquota de 1,5%</strong> do valor venal (Detran-SP). O licenciamento anual (CRLV) é obrigatório para todos. Embarcações não pagam IPVA — registro na Capitania dos Portos é federal.</div>`;
+  html += `<div class="inote">📌 <strong>Estado de São Paulo:</strong> O mês de vencimento segue o último dígito da placa (5 = Maio, 7 = Julho, 4 = Abril). Reboques simples (carretinha de barco, de fazenda) são <strong>isentos de IPVA</strong> em SP — pagam apenas o licenciamento anual (CRLV) no Detran-SP. Embarcações não pagam IPVA — registro na Capitania dos Portos é federal.</div>`;
 
   VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
     const st = ipvaStatus(v);
