@@ -728,12 +728,45 @@ function totalIPVAVencidas(){
   return n;
 }
 
+function boatRegStatus(){
+  if(state.ipva && state.ipva['barco_marinha']) return 'pago';
+  return 'verificar';
+}
+
+function markBoatRegPago(){
+  if(!state.ipva) state.ipva = {};
+  if(state.ipva['barco_marinha']){
+    delete state.ipva['barco_marinha'];
+  } else {
+    const now = TODAY;
+    state.ipva['barco_marinha'] = {paidAt: MS[now.getMonth()]+'/'+now.getFullYear(), ts: Date.now()};
+  }
+  saveState();
+  renderAll();
+  showPage('ipva');
+}
+
 function ipvaStatus(v){
   if(!v.hasIPVA) return null;
+  if(state.ipva && state.ipva[v.id]) return 'pago';
   if(TODAY.getMonth()+1 > v.ipvaMonth) return 'vencida';
   if(TODAY.getMonth()+1 === v.ipvaMonth) return 'atencao';
   if(v.ipvaMonth - (TODAY.getMonth()+1) <= 2) return 'atencao';
   return 'ok';
+}
+
+function markIPVAPago(vid){
+  if(!state.ipva) state.ipva = {};
+  const v = VEHICLES.find(x=>x.id===vid);
+  if(state.ipva[vid]){
+    delete state.ipva[vid];
+  } else {
+    const now = TODAY;
+    state.ipva[vid] = {paidAt: MS[now.getMonth()]+'/'+now.getFullYear(), ts: Date.now()};
+  }
+  saveState();
+  renderAll();
+  showPage('ipva');
 }
 
 function ipvaMonthStr(v){
@@ -945,8 +978,11 @@ function renderIPVA(){
 
   VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
     const st = ipvaStatus(v);
-    const bclass = st==='vencida'?'bd':st==='atencao'?'bw':'bo';
-    const blabel = st==='vencida'?'⚠️ Vencido':st==='atencao'?'📅 Este mês':'✅ Em dia';
+    const paid = state.ipva && state.ipva[v.id];
+    const bclass = st==='pago'?'bo':st==='vencida'?'bd':st==='atencao'?'bw':'bo';
+    const blabel = st==='pago'?'✅ Pago':st==='vencida'?'⚠️ Vencido':st==='atencao'?'📅 Este mês':'✅ Em dia';
+    const statusColor = st==='pago'?'var(--ok)':st==='vencida'?'var(--danger)':st==='atencao'?'var(--warn)':'var(--ok)';
+    const statusText = st==='pago'?`PAGO em ${paid.paidAt}`:st==='vencida'?'REGULARIZAR URGENTE':st==='atencao'?'Vence em breve':'Em dia';
     html += `<div class="card">
       <div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px">
         <span style="font-size:28px">${v.icon}</span>
@@ -958,23 +994,35 @@ function renderIPVA(){
       </div>
       <div class="ipva-row"><span class="ipva-lbl">Final da placa</span><span class="ipva-val">${v.plateEnd}</span></div>
       <div class="ipva-row"><span class="ipva-lbl">Mês do IPVA</span><span class="ipva-val">${MF[v.ipvaMonth-1]}</span></div>
-      <div class="ipva-row"><span class="ipva-lbl">Vencimento ${TODAY.getFullYear()}</span><span class="ipva-val" style="color:${st==='vencida'?'var(--danger)':st==='atencao'?'var(--warn)':'var(--ok)'}">${ipvaMonthStr(v)}</span></div>
+      <div class="ipva-row"><span class="ipva-lbl">Vencimento ${TODAY.getFullYear()}</span><span class="ipva-val" style="color:${statusColor}">${ipvaMonthStr(v)}</span></div>
       <div class="ipva-row"><span class="ipva-lbl">Licenciamento (CRLV)</span><span class="ipva-val">Junto ao IPVA</span></div>
-      <div class="ipva-row"><span class="ipva-lbl">Status</span><span class="ipva-val" style="color:${st==='vencida'?'var(--danger)':st==='atencao'?'var(--warn)':'var(--ok)'}">${st==='vencida'?'REGULARIZAR URGENTE':st==='atencao'?'Vence em breve':'Em dia'}</span></div>
+      <div class="ipva-row"><span class="ipva-lbl">Status</span><span class="ipva-val" style="color:${statusColor}">${statusText}</span></div>
+      <div style="padding:12px 16px">
+        <button class="btn-done${paid?' done-now':''}" style="width:100%;justify-content:center" onclick="markIPVAPago('${v.id}')">
+          ${paid ? '↩️ Desfazer pagamento' : '💳 Marcar IPVA + Licenciamento como Pago'}
+        </button>
+      </div>
     </div>`;
   });
 
+  const boatPaid = state.ipva && state.ipva['barco_marinha'];
   html += `<div class="card">
     <div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px">
       <span style="font-size:28px">⛵</span>
       <div style="flex:1"><div style="font-size:15px;font-weight:700">Barco — Motor F60</div><div style="font-size:12px;color:var(--muted)">Embarcação</div></div>
-      <span class="badge bg">📋 Marinha</span>
+      <span class="badge ${boatPaid?'bo':'bg'}">${boatPaid?'✅ Pago':'📋 Marinha'}</span>
     </div>
     <div class="ipva-row"><span class="ipva-lbl">Registro</span><span class="ipva-val">Capitania dos Portos</span></div>
     <div class="ipva-row"><span class="ipva-lbl">IPVA</span><span class="ipva-val">Não se aplica</span></div>
     <div class="ipva-row"><span class="ipva-lbl">Taxa de inscrição</span><span class="ipva-val">Renovação anual</span></div>
     <div class="ipva-row"><span class="ipva-lbl">Vistoria</span><span class="ipva-val">Verificar Capitania</span></div>
     <div class="ipva-row"><span class="ipva-lbl">Documentos</span><span class="ipva-val">TIE + TAR + Lista equipamentos</span></div>
+    ${boatPaid ? `<div class="ipva-row"><span class="ipva-lbl">Pago em</span><span class="ipva-val" style="color:var(--ok)">${boatPaid.paidAt}</span></div>` : ''}
+    <div style="padding:12px 16px">
+      <button class="btn-done${boatPaid?' done-now':''}" style="width:100%;justify-content:center" onclick="markBoatRegPago()">
+        ${boatPaid ? '↩️ Desfazer' : '💳 Marcar Registro Marinha como Pago'}
+      </button>
+    </div>
   </div>`;
 
   html += `<div class="card">
@@ -1004,6 +1052,7 @@ function renderForecast(){
   // IPVA overdue
   VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
     const st = ipvaStatus(v);
+    if(st==='pago') return; // já pago, não mostrar no forecast
     if(st==='vencida'){
       events.push({
         date: new Date(TODAY.getFullYear(), v.ipvaMonth-1, 1),
