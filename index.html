@@ -1463,16 +1463,30 @@ function _renderSettings(){
   `;
 }
 
+function _parseFbInput(raw){
+  let s = raw.trim();
+  // Extract the {...} block (handles "const firebaseConfig = { ... };")
+  const m = s.match(/\{[\s\S]*\}/);
+  if(m) s = m[0];
+  // Try standard JSON
+  try { return JSON.parse(s); } catch(e){}
+  // Convert JS object literal → JSON: quote unquoted keys
+  const asJson = s
+    .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)(\s*:)/g, '$1"$2"$3')
+    .replace(/'/g, '"');
+  try { return JSON.parse(asJson); } catch(e){ return null; }
+}
+
 function _connectFb(){
   const val = (document.getElementById('fb-cfg-input')||{}).value||'';
   if(!val.trim()){ alert('Cole a configuração do Firebase primeiro.'); return; }
-  try {
-    const cfg = JSON.parse(val.trim());
-    localStorage.setItem(FB_CONFIG_KEY, val.trim());
-    _initFb(cfg);
-    _renderSettings();
-    showSyncToast('🔥 Firebase conectado!');
-  } catch(e){ alert('JSON inválido. Verifique a configuração copiada do Firebase.'); }
+  const cfg = _parseFbInput(val);
+  if(!cfg){ alert('Não foi possível ler a configuração. Copie exatamente o bloco { apiKey: ... } do Firebase.'); return; }
+  const cfgJson = JSON.stringify(cfg);
+  localStorage.setItem(FB_CONFIG_KEY, cfgJson);
+  _initFb(cfg);
+  _renderSettings();
+  showSyncToast('🔥 Firebase conectado!');
 }
 
 function _disconnectFb(){
