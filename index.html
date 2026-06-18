@@ -353,10 +353,10 @@ const VEHICLES = [
   {
     id:'f60',
     name:'Barco — Motor Yamaha F60',
-    subtitle:'F60FETL 4T • 2016 • 77 horas',
+    subtitle:'F60FETL 4T • 2026 • 77 horas',
     icon:'⛵',
     iconBg:'#d1f2eb',
-    year:2016,
+    year:2026,
     plateEnd:null,
     hasKm:false,
     hasHours:true,
@@ -418,21 +418,21 @@ const VEHICLES = [
        hDetail:'Próximo: 200h (123h restantes)',
        timeDetail:'A cada 200h ou 24 meses'},
       {id:'f_impelidor',name:'Impelidor da Bomba d\'Água',icon:'💧',
-       intervalH:200,intervalMonths:24,currentH:77,lastHStr:'Troca original',
-       nextH:200,nextDateRef:0,
-       status:'atencao',priority:3,
-       desc:'ATENÇÃO: Motor com 10 anos (2016). Impelidor borracha envelhece. Verificar sinais de superaquecimento (buzzer, piloto). Substituição preventiva RECOMENDADA por idade mesmo antes de 200h.',
+       intervalH:200,intervalMonths:24,currentH:77,lastHStr:'Zero horas (2026)',
+       nextH:200,nextDateRef:18,
+       status:'ok',priority:1,
+       desc:'Impelidor de borracha da bomba d\'água. Motor novo (2026) — substituir preventivamente a cada 200h ou 2 anos. Verificar sinais de superaquecimento (buzzer, alarme no painel).',
        parts:['Kit impelidor F60 — 66T-44352-01'],
-       hDetail:'Motor com 10 anos de uso',
-       timeDetail:'200h ou 2 anos — já ultrapas.'},
+       hDetail:'Próximo: 200h (123h restantes)',
+       timeDetail:'A cada 200h ou 24 meses'},
       {id:'f_correia',name:'Correia Sincronizadora (Timing Belt)',icon:'🔗',
-       intervalH:300,intervalMonths:36,currentH:77,lastHStr:'Troca original',
-       nextH:300,nextDateRef:0,
-       status:'atencao',priority:3,
-       desc:'ATENÇÃO: Componente de segurança crítico. Motor com 10 anos. A correia envelhece mesmo parada. Ruptura = perda total do motor. Recomenda-se inspeção visual imediata e substituição preventiva.',
+       intervalH:300,intervalMonths:36,currentH:77,lastHStr:'Zero horas (2026)',
+       nextH:300,nextDateRef:30,
+       status:'ok',priority:1,
+       desc:'Correia sincronizadora (timing belt). Componente de segurança crítico — ruptura = dano total ao motor. Motor novo (2026), correia em bom estado. Substituir na revisão de 300h ou 3 anos.',
        parts:['Correia sincronizadora F60'],
-       hDetail:'Motor com 10 anos — inspecionar',
-       timeDetail:'300h ou 36 meses — atenção à idade'},
+       hDetail:'Próximo: 300h (223h restantes)',
+       timeDetail:'A cada 300h ou 36 meses'},
       {id:'f_termostato',name:'Termostato',icon:'🌡️',
        intervalH:200,intervalMonths:24,currentH:77,lastHStr:'Troca original',
        nextH:200,nextDateRef:14,
@@ -545,7 +545,7 @@ const VEHICLES = [
   {
     id:'carreta_rod',
     name:'Carreta Rodoviária de Carga',
-    subtitle:'Semi-reboque • Placa final 7',
+    subtitle:'Semi-reboque SP • Placa final 7',
     icon:'🚛',
     iconBg:'#e8daef',
     year:null,
@@ -556,7 +556,7 @@ const VEHICLES = [
     hasHours:false,
     hasIPVA:true,
     ipvaMonth:7,
-    ipvaTypes:['licenc'],
+    ipvaTypes:['ipva','licenc'],
     boatReg:false,
     specs:[
       ['Tipo','Semi-reboque de carga'],
@@ -630,7 +630,7 @@ const VEHICLES = [
   {
     id:'carreta_barco',
     name:'Carreta do Barco',
-    subtitle:'Reboque náutico • Placa final 4',
+    subtitle:'Reboque náutico SP • Placa final 4',
     icon:'🛥️',
     iconBg:'#d6eaf8',
     year:null,
@@ -639,7 +639,7 @@ const VEHICLES = [
     hasHours:false,
     hasIPVA:true,
     ipvaMonth:4,
-    ipvaTypes:['licenc'],
+    ipvaTypes:['ipva','licenc'],
     boatReg:false,
     specs:[
       ['Tipo','Reboque p/ embarcação'],
@@ -1040,7 +1040,7 @@ function saveModal(){
 
 function renderIPVA(){
   let html = '';
-  html += `<div class="inote">📌 <strong>Datas por estado:</strong> Os meses abaixo seguem o calendário mais comum (SP/MG — final da placa = mês). Verifique seu estado no site do Detran local. Para <strong>carretas semi-reboques</strong>, o IPVA pode ser isento ou reduzido conforme o estado.</div>`;
+  html += `<div class="inote">📌 <strong>Estado de São Paulo:</strong> O mês de vencimento segue o último dígito da placa (5 = Maio, 7 = Julho, 4 = Abril). Carretas e semi-reboques em SP <strong>pagam IPVA à alíquota de 1,5%</strong> do valor venal (Detran-SP). O licenciamento anual (CRLV) é obrigatório para todos. Embarcações não pagam IPVA — registro na Capitania dos Portos é federal.</div>`;
 
   VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
     const st = ipvaStatus(v);
@@ -1115,7 +1115,7 @@ function renderIPVA(){
     <div class="ipva-row"><span class="ipva-lbl">Observação</span><span class="ipva-val">Uso restrito a propriedades</span></div>
   </div>`;
 
-  html += `<div class="inote" style="margin-top:4px">💡 <strong>FourTrax:</strong> O nome "FourTrax" é da linha Honda. Se o veículo é da Yamaha, pode ser um <em>Grizzly</em> ou <em>Kodiak</em>. A manutenção listada é válida para ambas as marcas na mesma cilindrada.</div>`;
+  html += `<div class="inote" style="margin-top:4px">💡 <strong>FourTrax / Quadriciclo em SP:</strong> Uso restrito a propriedades privadas — sem emplacamento nem IPVA. O nome "FourTrax" é da linha Honda; se o veículo for Yamaha, pode ser <em>Grizzly</em> ou <em>Kodiak</em>. A manutenção listada é compatível com ambas as marcas.</div>`;
 
   document.getElementById('pg-ipva').innerHTML = html;
 }
