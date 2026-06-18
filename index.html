@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d2137">
+<title>Manutenção Periódica</title>
+<style>
+:root {
+  --primary: #0d2137;
+  --primary2: #1a3a5c;
+  --accent: #e8a020;
+  --ok: #27ae60;
+  --warn: #e67e22;
+  --danger: #e74c3c;
+  --info: #2980b9;
+  --bg: #eef0f5;
+  --card: #ffffff;
+  --text: #2c3e50;
+  --muted: #7f8c8d;
+  --border: #dde1e8;
+  --nav-h: 66px;
+  --r: 16px;
+  --r-sm: 10px;
+  --shadow: 0 2px 14px rgba(13,33,55,0.09);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5}
+body{max-width:430px;margin:0 auto;position:relative;overflow-x:hidden}
+/* HEADER */
+#hdr{background:linear-gradient(160deg,var(--primary) 0%,var(--primary2) 100%);color:white;padding:48px 20px 16px;position:sticky;top:0;z-index:100}
+.hdr-in{display:flex;justify-content:space-between;align-items:flex-end}
+.hdr-title{font-size:21px;font-weight:800;letter-spacing:-0.3px}
+.hdr-date{font-size:12px;opacity:0.75;margin-top:2px}
+.hdr-pill{background:var(--danger);color:white;font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px;white-space:nowrap}
+/* PAGES */
+.page{display:none;padding:14px;padding-bottom:calc(var(--nav-h) + 20px);animation:fi .2s ease}
+.page.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+/* BOTTOM NAV */
+#bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:var(--nav-h);background:var(--card);border-top:1px solid var(--border);display:flex;z-index:999;padding-bottom:env(safe-area-inset-bottom,0);box-shadow:0 -4px 24px rgba(0,0,0,.07)}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;position:relative;transition:all .2s}
+.nb .ni{font-size:21px}
+.nb .nl{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
+.nb.active .nl{color:var(--accent)}
+.nb.active .ni{transform:scale(1.1)}
+.nbadge{position:absolute;top:6px;right:18px;background:var(--danger);color:white;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+/* SECTION TITLE */
+.stitle{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin:14px 0 8px}
+/* CARDS */
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+/* ALERT BANNERS */
+.abanner{border-radius:var(--r);padding:14px 16px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px}
+.ab-d{background:linear-gradient(135deg,#e74c3c,#c0392b);color:white}
+.ab-w{background:linear-gradient(135deg,#e67e22,#d35400);color:white}
+.ab-i{background:linear-gradient(135deg,#2980b9,#1a6fa0);color:white}
+.ab-icon{font-size:24px;flex-shrink:0;line-height:1.3}
+.ab-body h3{font-size:14px;font-weight:700}
+.ab-body p{font-size:12px;opacity:.9;margin-top:3px;line-height:1.5}
+/* SUMMARY STATS */
+.srow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.sbox{background:var(--card);border-radius:var(--r-sm);padding:12px;text-align:center;box-shadow:var(--shadow)}
+.snum{font-size:28px;font-weight:800;line-height:1}
+.slbl{font-size:10px;color:var(--muted);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+/* VEHICLE CARD HOME */
+.vch{padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.vicon{font-size:34px;width:58px;height:58px;display:flex;align-items:center;justify-content:center;border-radius:14px;flex-shrink:0}
+.vinfo{flex:1;min-width:0}
+.vname{font-size:15px;font-weight:700}
+.vsub{font-size:12px;color:var(--muted);margin-top:1px}
+.vchips{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.chip{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cd{background:#fdecea;color:var(--danger)}
+.cw{background:#fef5e7;color:var(--warn)}
+.co{background:#eafaf1;color:var(--ok)}
+.ci{background:#eaf3fb;color:var(--info)}
+.cg{background:#f0f2f5;color:var(--muted)}
+/* VEHICLE BODY */
+.vbody{display:none;padding:0 0 6px}
+.vbody.open{display:block}
+/* SPECS */
+.specsg{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:4px 16px 12px}
+.sbox2{background:#f8f9fa;border-radius:var(--r-sm);padding:8px 10px}
+.slabel{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.sval{font-size:13px;font-weight:600;margin-top:1px}
+/* MAINTENANCE ITEMS */
+.mitem{border-bottom:1px solid var(--border)}
+.mitem:last-child{border-bottom:none}
+.mhdr{padding:13px 16px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.mname{flex:1;font-size:14px;font-weight:600}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.bd{background:#fdecea;color:var(--danger)}
+.bw{background:#fef5e7;color:var(--warn)}
+.bo{background:#eafaf1;color:var(--ok)}
+.bg{background:#f0f2f5;color:var(--muted)}
+.mdetail{display:none;padding:12px 16px 14px;background:#fafbfc;border-top:1px solid var(--border);font-size:13px}
+.mdetail.open{display:block}
+.dgrid{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin-bottom:10px}
+.dl{color:var(--muted);font-size:12px}
+.dv{font-weight:600;font-size:12px}
+.descbox{background:#f0f2f5;border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--text);line-height:1.6}
+.parts-list{margin-top:8px;padding-left:4px}
+.parts-list li{font-size:12px;color:var(--muted);padding:2px 0;list-style:none;padding-left:14px;position:relative}
+.parts-list li::before{content:'•';position:absolute;left:0;color:var(--accent)}
+.btn-done{display:inline-flex;align-items:center;gap:6px;background:var(--ok);color:white;border:none;border-radius:var(--r-sm);padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px;transition:opacity .2s;-webkit-appearance:none}
+.btn-done:active{opacity:.8}
+.btn-done.done-now{background:var(--muted)}
+/* VEHICLE SELECTOR */
+.vsel{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.vsel::-webkit-scrollbar{display:none}
+.vchip{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;background:var(--card);border:2px solid var(--border);cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;white-space:nowrap}
+.vchip.active{background:var(--primary);border-color:var(--primary);color:white}
+/* TOGGLE ICON */
+.ti{transition:transform .3s;color:var(--muted);font-size:13px}
+.ti.open{transform:rotate(180deg)}
+/* IPVA */
+.ipva-row{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border)}
+.ipva-row:last-child{border-bottom:none}
+.ipva-lbl{font-size:13px;color:var(--muted)}
+.ipva-val{font-size:13px;font-weight:700}
+/* FORECAST */
+.fcm{margin-bottom:18px}
+.fcmtitle{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;padding-left:4px}
+.fci{display:flex;background:var(--card);border-radius:var(--r-sm);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow)}
+.fcstripe{width:5px;flex-shrink:0}
+.fcstripe-d{background:var(--danger)}
+.fcstripe-w{background:var(--warn)}
+.fcstripe-o{background:var(--ok)}
+.fcstripe-i{background:var(--info)}
+.fcbody{padding:10px 12px;flex:1}
+.fctitle{font-size:13px;font-weight:700}
+.fcsub{font-size:12px;color:var(--muted);margin-top:2px}
+/* INFO NOTE */
+.inote{background:#eaf3fb;border-left:3px solid var(--info);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:10px 12px;font-size:12px;color:#1a5276;margin-bottom:12px;line-height:1.6}
+/* DIVIDER LABEL */
+.dvlbl{display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.dvlbl::after{content:'';flex:1;height:1px;background:var(--border)}
+/* HEADER vehicle section */
+.vcard-sec-hdr{padding:10px 16px;background:#f5f7fa;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+/* STATUS indicator for done items */
+.done-since{font-size:11px;color:var(--ok);display:flex;align-items:center;gap:4px;margin-top:4px}
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <div class="hdr-in">
+    <div>
+      <div class="hdr-title">🔧 Manutenção</div>
+      <div class="hdr-date" id="hdrdate"></div>
+    </div>
+    <div id="hdralert"></div>
+  </div>
+</header>
+
+<main>
+  <div id="pg-home" class="page active"></div>
+  <div id="pg-manut" class="page"></div>
+  <div id="pg-ipva" class="page"></div>
+  <div id="pg-alerta" class="page"></div>
+</main>
+
+<nav id="bnav">
+  <div class="nb active" data-p="home"><span class="ni">🏠</span><span class="nl">Início</span></div>
+  <div class="nb" data-p="manut"><span class="ni">🔧</span><span class="nl">Manutenção</span><span class="nbadge" id="nb-manut"></span></div>
+  <div class="nb" data-p="ipva"><span class="ni">📋</span><span class="nl">IPVA</span><span class="nbadge" id="nb-ipva"></span></div>
+  <div class="nb" data-p="alerta"><span class="ni">📅</span><span class="nl">Alertas</span></div>
+</nav>
+
+<!-- MARK-DONE MODAL -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:flex-end;justify-content:center">
+  <div style="background:white;border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:430px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px" id="modal-title">Marcar como Feita</div>
+    <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Data realizada</label>
+    <input type="month" id="modal-date" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:12px">
+    <div id="modal-km-wrap">
+      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Quilometragem (km)</label>
+      <input type="number" id="modal-km" placeholder="Ex: 60000" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:12px">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeModal()" style="flex:1;padding:12px;border:1px solid var(--border);border-radius:10px;background:white;font-size:15px;cursor:pointer">Cancelar</button>
+      <button onclick="saveModal()" style="flex:2;padding:12px;border:none;border-radius:10px;background:var(--ok);color:white;font-size:15px;font-weight:700;cursor:pointer">✅ Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+
+const TODAY = new Date('2026-06-18');
+const MF = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function addMonths(d,n){const r=new Date(d);r.setMonth(r.getMonth()+n);return r}
+function monthDiff(a,b){return (b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth())}
+function fmtDate(d){return MS[d.getMonth()]+'/'+d.getFullYear()}
+function fmtKm(n){return n.toLocaleString('pt-BR')+'km'}
+
+const VEHICLES = [
+  {
+    id:'lander',
+    name:'Yamaha Lander 250',
+    subtitle:'XTZ 250 • 2016 • Placa final 5',
+    icon:'🏍️',
+    iconBg:'#d6e8f5',
+    year:2016,
+    plateEnd:5,
+    hasKm:true,
+    currentKm:60000,
+    avgKmMonth:1500,
+    hasHours:false,
+    hasIPVA:true,
+    ipvaMonth:5,
+    boatReg:false,
+    specs:[
+      ['Motor','249cc Monocil. 4T SOHC'],
+      ['Potência','21,6 cv @ 7.500rpm'],
+      ['Torque','19,6 Nm @ 6.000rpm'],
+      ['Câmbio','5 velocidades'],
+      ['Óleo','Yamalube 4T 20W50'],
+      ['Vol. óleo','1,8L (c/ filtro)'],
+      ['Pneu D','90/90-19 54P'],
+      ['Pneu T','110/90-17 60P'],
+      ['Vela','NGK CR7E'],
+      ['Tanque','15,7 litros'],
+    ],
+    maintenance:[
+      {id:'l_oleo',name:'Troca de Óleo + Filtro',icon:'🛢️',
+       intervalKm:3000,intervalMonths:6,lastKm:57000,lastDateStr:'Dez/2025',
+       nextKm:60000,nextDateRef:0,
+       status:'vencida',priority:3,
+       desc:'Yamalube 4T 20W50 JASO MA/MA2. Drenar com motor morno (5 min rodando). Torque do bujão: 20 N·m. Substituir filtro a cada 6.000km.',
+       parts:['Yamalube 4T 20W50 — 2 litros','Filtro de óleo 5GH-13440-50'],
+       kmDetail:'Último: 57.000km • Próximo: 60.000km',
+       timeDetail:'A cada 3.000km ou 6 meses'},
+      {id:'l_filtroar',name:'Substituição do Filtro de Ar',icon:'💨',
+       intervalKm:12000,intervalMonths:12,lastKm:48000,lastDateStr:'Jun/2025',
+       nextKm:60000,nextDateRef:0,
+       status:'vencida',priority:3,
+       desc:'Elemento filtrante de papel. Não lavar. Em condições de muita poeira, substituir mais cedo. Verificar/limpar a cada 6.000km.',
+       parts:['Filtro de ar 1S7-14451-00'],
+       kmDetail:'Último: 48.000km • Próximo: 60.000km',
+       timeDetail:'A cada 12.000km ou 12 meses'},
+      {id:'l_vela',name:'Substituição da Vela de Ignição',icon:'⚡',
+       intervalKm:12000,intervalMonths:12,lastKm:48000,lastDateStr:'Jun/2025',
+       nextKm:60000,nextDateRef:0,
+       status:'vencida',priority:3,
+       desc:'NGK CR7E ou equivalente. Folga do eletrodo: 0,6–0,7mm. Torque de montagem: 12,5 N·m. Inspecionar a cada 6.000km.',
+       parts:['Vela NGK CR7E'],
+       kmDetail:'Último: 48.000km • Próximo: 60.000km',
+       timeDetail:'A cada 12.000km ou 12 meses'},
+      {id:'l_valvulas',name:'Verificação da Folga das Válvulas',icon:'🔩',
+       intervalKm:24000,intervalMonths:24,lastKm:48000,lastDateStr:'Jun/2025',
+       nextKm:72000,nextDateRef:8,
+       status:'ok',priority:1,
+       desc:'Admissão: 0,08–0,12mm (frio). Escape: 0,13–0,17mm (frio). Ajuste realizado por mecânico especializado. Inspecionar em intervalos reduzidos se ouvir ruído.',
+       parts:['Calços de válvulas (se necessário)'],
+       kmDetail:'Último: 48.000km • Próximo: 72.000km',
+       timeDetail:'A cada 24.000km ou 24 meses'},
+      {id:'l_corrente_lub',name:'Lubrificação da Corrente',icon:'⛓️',
+       intervalKm:500,intervalMonths:1,lastKm:59500,lastDateStr:'Jun/2026',
+       nextKm:60500,nextDateRef:0,
+       status:'atencao',priority:2,
+       desc:'Usar lubrificante específico para correntes (spray). Limpar com pano seco antes. Lubrificar toda a extensão girando a roda traseira. Fazer com corrente morna.',
+       parts:['Spray lubrificante de corrente'],
+       kmDetail:'A cada 500km',
+       timeDetail:'Ou mensalmente'},
+      {id:'l_corrente_reg',name:'Regulagem e Tensão da Corrente',icon:'🔧',
+       intervalKm:3000,intervalMonths:6,lastKm:57000,lastDateStr:'Dez/2025',
+       nextKm:60000,nextDateRef:0,
+       status:'vencida',priority:2,
+       desc:'Folga vertical: 25–35mm (ponto médio, moto na central). Verificar desgaste dos elos. Comprimento máx.: 20 elos = 319,4mm. Substituir se desgastada.',
+       parts:['Corrente 428H (se necessário)','Kit relação (se necessário)'],
+       kmDetail:'Último: 57.000km • Próximo: 60.000km',
+       timeDetail:'A cada 3.000km ou 6 meses'},
+      {id:'l_freio',name:'Fluido de Freio (Dianteiro e Traseiro)',icon:'🛑',
+       intervalKm:null,intervalMonths:24,lastKm:null,lastDateStr:'Desconhecida',
+       nextKm:null,nextDateRef:0,
+       status:'verificar',priority:2,
+       desc:'DOT 4. Substituir a cada 2 anos ou se houver queda no nível. Sangrar o sistema ao trocar. Verificar pastilhas/lonas e disco/tambor a cada 6.000km.',
+       parts:['Fluido DOT 4 — 250ml'],
+       kmDetail:'Independente de km',
+       timeDetail:'A cada 24 meses — verificar data'},
+      {id:'l_arrefec',name:'Líquido de Arrefecimento',icon:'🌡️',
+       intervalKm:48000,intervalMonths:48,lastKm:null,lastDateStr:'Desconhecida',
+       nextKm:72000,nextDateRef:8,
+       status:'ok',priority:1,
+       desc:'Mistura 50/50 água destilada + anticongelante. Capacidade: ~1,15L. Inspecionar nível no reservatório a cada 6.000km. Substituir a cada 4 anos ou 48.000km.',
+       parts:['Anticongelante Yamaha ou equiv. (1L)'],
+       kmDetail:'Próximo: ~72.000km',
+       timeDetail:'A cada 48.000km ou 48 meses'},
+      {id:'l_pneus',name:'Verificação dos Pneus',icon:'⭕',
+       intervalKm:null,intervalMonths:1,lastKm:null,lastDateStr:'Mensal',
+       nextKm:null,nextDateRef:0,
+       status:'verificar',priority:1,
+       desc:'Pressão: Diant. 2,0 kgf/cm² (29 PSI) • Tras. 2,25 kgf/cm² (33 PSI). Verificar desgaste, cortes e empenamento. Trocar se careca ou com mais de 5 anos.',
+       parts:['Manômetro de pneu'],
+       kmDetail:'Verificar mensalmente',
+       timeDetail:'Pressão calibrar a frio'},
+      {id:'l_garfo',name:'Óleo do Garfo (Suspensão Dianteira)',icon:'🔧',
+       intervalKm:20000,intervalMonths:24,lastKm:60000,lastDateStr:'Jun/2026',
+       nextKm:80000,nextDateRef:24,
+       status:'ok',priority:1,
+       desc:'Substituir óleo dos amortecedores dianteiros. Capacidade por amortecedor: aprox. 340ml. Tipo: Yamaha Suspension Oil ou equivalente 10W.',
+       parts:['Óleo suspensão 10W (700ml)','Retentores (se necessário)'],
+       kmDetail:'Próximo: 80.000km',
+       timeDetail:'A cada 20.000km ou 2 anos'},
+    ]
+  },
+  {
+    id:'f60',
+    name:'Barco — Motor Yamaha F60',
+    subtitle:'F60FETL 4T • 2016 • 77 horas',
+    icon:'⛵',
+    iconBg:'#d1f2eb',
+    year:2016,
+    plateEnd:null,
+    hasKm:false,
+    hasHours:true,
+    currentHours:77,
+    avgHoursMonth:8,
+    hasIPVA:false,
+    boatReg:true,
+    specs:[
+      ['Motor','1.832cc 4 cil. DOHC 16V'],
+      ['Potência','60 cv @ 5.500rpm'],
+      ['Torque','115 Nm @ 4.500rpm'],
+      ['Arranque','Elétrico'],
+      ['Óleo motor','10W-30 API SE+'],
+      ['Vol. óleo','3,4L (com filtro)'],
+      ['Vela','NGK DCPR6E'],
+      ['Tensão','12V / 18A'],
+      ['Hélice','Alumínio ou Inox'],
+      ['Peso','138 kg'],
+    ],
+    maintenance:[
+      {id:'f_oleo',name:'Óleo Motor + Filtro de Óleo',icon:'🛢️',
+       intervalH:100,intervalMonths:12,currentH:77,lastHStr:'~20h',
+       nextH:100,nextDateRef:3,
+       status:'atencao',priority:3,
+       desc:'Yamalube 4M 10W-30 (óleo náutico). Capacidade: 3,4L com filtro. Trocar com motor morno. Torque do bujão: 43 N·m. Sempre trocar junto com filtro.',
+       parts:['Yamalube 4M 10W-30 — 4L','Filtro de óleo 5GH-13440-50-00'],
+       hDetail:'Faltam apenas 23 horas',
+       timeDetail:'A cada 100h ou 12 meses'},
+      {id:'f_oleopé',name:'Óleo do Pé (Câmbio / Lower Unit)',icon:'⚙️',
+       intervalH:100,intervalMonths:12,currentH:77,lastHStr:'~20h',
+       nextH:100,nextDateRef:3,
+       status:'atencao',priority:3,
+       desc:'Hipoid Gear Oil 90. Drenar pelo bujão inferior, abastecer pelo bujão inferior até transbordar pelo bujão superior. Presença de água ou grumos: inspecionar vedação.',
+       parts:['Gear Oil SAE 90 — 500ml'],
+       hDetail:'Faltam 23 horas',
+       timeDetail:'A cada 100h ou 12 meses'},
+      {id:'f_velas',name:'Verificação das Velas de Ignição',icon:'⚡',
+       intervalH:100,intervalMonths:12,currentH:77,lastHStr:'~20h',
+       nextH:100,nextDateRef:3,
+       status:'atencao',priority:2,
+       desc:'4 velas NGK DCPR6E. Folga: 0,8–0,9mm. Substituir se eletrodo desgastado, depósitos excessivos ou ao atingir 300h. Verificar coloração (marrom claro = ideal).',
+       parts:['Vela NGK DCPR6E × 4 (substituir a 300h)'],
+       hDetail:'Faltam 23h para inspeção',
+       timeDetail:'Verificar 100h • Trocar 300h'},
+      {id:'f_zinco',name:'Anodos de Zinco (Proteção Catódica)',icon:'🛡️',
+       intervalH:100,intervalMonths:12,currentH:77,lastHStr:'~20h',
+       nextH:100,nextDateRef:3,
+       status:'atencao',priority:3,
+       desc:'Essencial em água salgada. Verificar desgaste: substituir se mais de 50% corroído. Anodos no pé, no motor e no espelho de popa. NÃO pintar os anodos.',
+       parts:['Kit anodos de zinco p/ F60'],
+       hDetail:'Faltam 23h para inspeção',
+       timeDetail:'A cada 100h ou anualmente'},
+      {id:'f_filtrocomb',name:'Filtro de Combustível',icon:'⛽',
+       intervalH:200,intervalMonths:24,currentH:77,lastHStr:'Troca',
+       nextH:200,nextDateRef:14,
+       status:'ok',priority:1,
+       desc:'Filtro de linha e filtro interno. Substituir a cada 200h ou 2 anos. Usar combustível de qualidade — evitar gasolina com mais de 10% etanol (E10 máx).',
+       parts:['Filtro combustível F60'],
+       hDetail:'Próximo: 200h (123h restantes)',
+       timeDetail:'A cada 200h ou 24 meses'},
+      {id:'f_impelidor',name:'Impelidor da Bomba d\'Água',icon:'💧',
+       intervalH:200,intervalMonths:24,currentH:77,lastHStr:'Troca original',
+       nextH:200,nextDateRef:0,
+       status:'atencao',priority:3,
+       desc:'ATENÇÃO: Motor com 10 anos (2016). Impelidor borracha envelhece. Verificar sinais de superaquecimento (buzzer, piloto). Substituição preventiva RECOMENDADA por idade mesmo antes de 200h.',
+       parts:['Kit impelidor F60 — 66T-44352-01'],
+       hDetail:'Motor com 10 anos de uso',
+       timeDetail:'200h ou 2 anos — já ultrapas.'},
+      {id:'f_correia',name:'Correia Sincronizadora (Timing Belt)',icon:'🔗',
+       intervalH:300,intervalMonths:36,currentH:77,lastHStr:'Troca original',
+       nextH:300,nextDateRef:0,
+       status:'atencao',priority:3,
+       desc:'ATENÇÃO: Componente de segurança crítico. Motor com 10 anos. A correia envelhece mesmo parada. Ruptura = perda total do motor. Recomenda-se inspeção visual imediata e substituição preventiva.',
+       parts:['Correia sincronizadora F60'],
+       hDetail:'Motor com 10 anos — inspecionar',
+       timeDetail:'300h ou 36 meses — atenção à idade'},
+      {id:'f_termostato',name:'Termostato',icon:'🌡️',
+       intervalH:200,intervalMonths:24,currentH:77,lastHStr:'Troca original',
+       nextH:200,nextDateRef:14,
+       status:'ok',priority:1,
+       desc:'Verificar funcionamento. Se motor esquentar rápido ou não atingir temperatura operacional: possível falha. Fácil substituição preventiva na revisão de 100h.',
+       parts:['Termostato F60'],
+       hDetail:'Próximo: 200h',
+       timeDetail:'A cada 200h ou 2 anos'},
+      {id:'f_lavagem',name:'Lavagem Pós-Uso (Flush)',icon:'🚿',
+       intervalH:null,intervalMonths:null,currentH:77,lastHStr:'Cada uso',
+       nextH:null,nextDateRef:0,
+       status:'rotina',priority:1,
+       desc:'Após CADA USO: conectar mangueira no bocal de flush e ligar motor por 5 min em marcha lenta. Remove sais, areia e depósitos. Fundamental para longevidade.',
+       parts:['Adaptador de flush (muffs)'],
+       hDetail:'Procedimento obrigatório',
+       timeDetail:'Após cada uso'},
+      {id:'f_helice',name:'Verificação da Hélice',icon:'🌀',
+       intervalH:100,intervalMonths:12,currentH:77,lastHStr:'Recente',
+       nextH:100,nextDateRef:3,
+       status:'atencao',priority:2,
+       desc:'Verificar pás por impactos, dobras ou cavitação. Verificar vedação do eixo e pino de cisalhamento. Lubrificar o cubo com graxa marítima nas trocas de óleo do pé.',
+       parts:['Graxa marítima','Pino de cisalhamento (reserva)'],
+       hDetail:'Faltam 23h para inspeção',
+       timeDetail:'A cada 100h ou anualmente'},
+    ]
+  },
+  {
+    id:'fourtrax',
+    name:'Quadriciclo FourTrax 4×4',
+    subtitle:'Honda TRX420 • Sem hodômetro de horas',
+    icon:'🚜',
+    iconBg:'#fdebd0',
+    year:null,
+    plateEnd:null,
+    hasKm:false,
+    hasHours:false,
+    hasIPVA:false,
+    boatReg:false,
+    specs:[
+      ['Motor','420cc Monocil. 4T OHV'],
+      ['Potência','~26 cv'],
+      ['Tração','4×4 / 2×4 selecionável'],
+      ['Câmbio','Automático ESP'],
+      ['Óleo','10W-40 MA/MA2 SJ+'],
+      ['Vol. óleo','1,9L (c/ filtro)'],
+      ['Pneu D','25×8-12 (diant.)'],
+      ['Pneu T','25×10-12 (tras.)'],
+      ['Vela','NGK DPR7EA-9'],
+      ['Tanque','15 litros'],
+    ],
+    maintenance:[
+      {id:'ft_oleo',name:'Troca de Óleo + Filtro',icon:'🛢️',
+       intervalH:100,intervalMonths:12,
+       status:'verificar',priority:2,
+       desc:'10W-40 API SJ ou superior, JASO MA/MA2. Capacidade: 1,9L com filtro. Trocar com maior frequência em uso intenso (lama, poeira). Sempre trocar filtro junto.',
+       parts:['Óleo 10W-40 MA2 (2L)','Filtro de óleo 15412-HM8-A10'],
+       hDetail:'A cada 100h ou 12 meses',
+       timeDetail:'Verificar data da última troca'},
+      {id:'ft_filtroar',name:'Limpeza/Substituição Filtro de Ar',icon:'💨',
+       intervalH:50,intervalMonths:6,
+       status:'verificar',priority:2,
+       desc:'Filtro espuma + papel. Limpar espuma a cada 50h (mais frequente em lama/pó). Substituir filtro de papel a cada 200h ou 2 anos. Nunca operar sem filtro.',
+       parts:['Filtro de ar 17210-HP5-601','Graxa para vedação'],
+       hDetail:'Limpar a cada 50h ou 6 meses',
+       timeDetail:'Verificar estado atual'},
+      {id:'ft_vela',name:'Vela de Ignição',icon:'⚡',
+       intervalH:200,intervalMonths:24,
+       status:'verificar',priority:1,
+       desc:'NGK DPR7EA-9. Folga: 0,8–0,9mm. Verificar coloração e desgaste do eletrodo. Torque: 16 N·m.',
+       parts:['Vela NGK DPR7EA-9'],
+       hDetail:'A cada 200h ou 24 meses',
+       timeDetail:'Verificar data'},
+      {id:'ft_diffront',name:'Óleo Diferencial Frontal',icon:'⚙️',
+       intervalH:200,intervalMonths:24,
+       status:'verificar',priority:2,
+       desc:'Hipoid Gear Oil SAE 80 ou 90. Capacidade: ~0,17L. Substituir na mesma revisão do dif. traseiro. Verificar vedação (presença de água = trocar imediatamente).',
+       parts:['Gear Oil SAE 80 (200ml)'],
+       hDetail:'A cada 200h ou 24 meses',
+       timeDetail:'Verificar data'},
+      {id:'ft_diftras',name:'Óleo Diferencial Traseiro',icon:'⚙️',
+       intervalH:200,intervalMonths:24,
+       status:'verificar',priority:2,
+       desc:'SAE 80 Gear Oil. Capacidade: ~0,25L. Verificar nível antes de cada uso. Em uso intenso (off-road com lama/água), substituir com mais frequência.',
+       parts:['Gear Oil SAE 80 (300ml)'],
+       hDetail:'A cada 200h ou 24 meses',
+       timeDetail:'Verificar data'},
+      {id:'ft_freio',name:'Fluido de Freio',icon:'🛑',
+       intervalH:null,intervalMonths:24,
+       status:'verificar',priority:2,
+       desc:'DOT 4. Verificar nível no reservatório. Substituir a cada 2 anos. Inspecionar pastilhas e discos. O quadriciclo usa freio a disco nas 4 rodas.',
+       parts:['Fluido DOT 4 (250ml)'],
+       hDetail:'A cada 24 meses',
+       timeDetail:'Verificar data da última troca'},
+      {id:'ft_lubrif',name:'Lubrificação Geral (Pivôs e Articulações)',icon:'🔩',
+       intervalH:50,intervalMonths:3,
+       status:'verificar',priority:1,
+       desc:'Lubrificar articulações dos braços de suspensão, barra de direção, rolamentos das rodas, colunas telescópicas. Usar graxa de lítio. Fazer antes e após uso na lama.',
+       parts:['Graxa de lítio universal','Graxa marítima (rolamentos)'],
+       hDetail:'A cada 50h ou 3 meses',
+       timeDetail:'Verificar e lubrificar'},
+      {id:'ft_pneus',name:'Pneus (Pressão e Estado)',icon:'⭕',
+       intervalH:null,intervalMonths:1,
+       status:'verificar',priority:1,
+       desc:'Pressão dianteira: 0,5 kgf/cm² (7,5 PSI) fora de estrada. Traseira: 0,5–1,0 kgf/cm². Verificar antes de cada uso. Cortes laterais na lama são comuns — inspecionar.',
+       parts:['Manômetro de pneu'],
+       hDetail:'Verificar antes de cada uso',
+       timeDetail:'Pressão: 7–15 PSI conforme terreno'},
+    ]
+  },
+  {
+    id:'carreta_rod',
+    name:'Carreta Rodoviária de Carga',
+    subtitle:'Semi-reboque • Placa final 7',
+    icon:'🚛',
+    iconBg:'#e8daef',
+    year:null,
+    plateEnd:7,
+    hasKm:true,
+    currentKm:null,
+    avgKmMonth:3000,
+    hasHours:false,
+    hasIPVA:true,
+    ipvaMonth:7,
+    boatReg:false,
+    specs:[
+      ['Tipo','Semi-reboque de carga'],
+      ['Eixos','Tandem ou triplo'],
+      ['Engate','Quinta-roda'],
+      ['Freio','Pneumático (ABS se novo)'],
+      ['Pneu','275/80R22.5 ou 295/80R22.5'],
+      ['Suspensão','Lâminas de mola ou ar'],
+      ['Capacidade','Até 28t PBT'],
+      ['RNTRC','Registro ANTT'],
+    ],
+    maintenance:[
+      {id:'cr_pneus',name:'Pneus (Pressão e Desgaste)',icon:'⭕',
+       intervalKm:null,intervalMonths:1,
+       status:'verificar',priority:2,
+       desc:'Pressão: 120–130 PSI (verificar plaqueta do veículo). Verificar pressão frio, antes de cada viagem. Inspecionar desgaste irregular, cortes e bolhas. Rodízio de pneus a cada 30.000km.',
+       parts:['Calibrador industrial (120+ PSI)'],
+       kmDetail:'Antes de cada viagem',
+       timeDetail:'Inspecionar mensalmente'},
+      {id:'cr_freios',name:'Sistema de Freios Pneumáticos',icon:'🛑',
+       intervalKm:20000,intervalMonths:12,
+       status:'verificar',priority:3,
+       desc:'Verificar lonas/câmaras/reguladores automáticos. Drenar condensado dos reservatórios diariamente. Testar válvula de freio de estacionamento. Inspecionar mangueiras e conexões por vazamentos.',
+       parts:['Lonas de freio (se necessário)','Câmaras (se necessário)'],
+       kmDetail:'A cada 20.000km ou anualmente',
+       timeDetail:'Drenagem: diária'},
+      {id:'cr_rolamentos',name:'Rolamentos das Rodas',icon:'🔩',
+       intervalKm:100000,intervalMonths:12,
+       status:'verificar',priority:2,
+       desc:'Rembalar com graxa específica para veículos pesados a cada 100.000km ou anual. Verificar folga axial e radial. Prestar atenção a ruídos anormais durante rodagem.',
+       parts:['Graxa para veíc. pesados (500g)'],
+       kmDetail:'A cada 100.000km',
+       timeDetail:'Inspecionar anualmente'},
+      {id:'cr_luzes',name:'Luzes e Sinalização',icon:'💡',
+       intervalKm:null,intervalMonths:1,
+       status:'verificar',priority:2,
+       desc:'Verificar faróis de posição laterais, traseiros, stop, ré e pisca-alerta. CONTRAN exige sinalização completa. Verificar cabo elétrico (chicote) por abrasão e conexões da tomada.',
+       parts:['Lâmpadas reserva','Fusíveis'],
+       kmDetail:'Antes de cada viagem',
+       timeDetail:'Verificação obrigatória CONTRAN'},
+      {id:'cr_quinta',name:'Quinta-Roda e Engate',icon:'🔗',
+       intervalKm:null,intervalMonths:3,
+       status:'verificar',priority:3,
+       desc:'Lubrificar prato da quinta-roda com graxa pesada a cada 3 meses ou 30.000km. Verificar trava do pino-rei. Inspecionar desgaste da placa de desgaste. Calibrar aperto do pino.',
+       parts:['Graxa para quinta-roda (500g)'],
+       kmDetail:'A cada 30.000km',
+       timeDetail:'Lubrificar a cada 3 meses'},
+      {id:'cr_suspensao',name:'Suspensão e Chassi',icon:'🏗️',
+       intervalKm:null,intervalMonths:6,
+       status:'verificar',priority:2,
+       desc:'Inspecionar molas, buchas e amortecedores (se equipado). Verificar porcas e parafusos do chassi. Verificar fixação dos eixos. Pintura anticorrosiva anual.',
+       parts:['Anticorrosivo spray','Graxa multi-purpose'],
+       kmDetail:'Semestral',
+       timeDetail:'Verificar rachaduras e amassamentos'},
+      {id:'cr_lona',name:'Lona e Estrutura de Carga',icon:'📦',
+       intervalKm:null,intervalMonths:6,
+       status:'verificar',priority:1,
+       desc:'Inspecionar lona por rasgos e fivelas por corrosão. Verificar cintas de amarração, ganchos e mordaças. Lubrificar travamentos com WD-40. Verificar estado da carroceria.',
+       parts:['WD-40','Cintas de amarração (reserva)'],
+       kmDetail:'A cada 6 meses',
+       timeDetail:'Antes de cada carregamento'},
+      {id:'cr_docum',name:'RNTRC / Documentação ANTT',icon:'📄',
+       intervalKm:null,intervalMonths:12,
+       status:'verificar',priority:2,
+       desc:'Manter Registro Nacional de Transportadores Rodoviários de Cargas atualizado. CRLV em dia. Apólice de seguro RCTR-C obrigatória para transporte de carga.',
+       parts:['RNTRC — renovação anual'],
+       kmDetail:'Renovação anual',
+       timeDetail:'ANTT — Verificar vencimento'},
+    ]
+  },
+  {
+    id:'carreta_barco',
+    name:'Carreta do Barco',
+    subtitle:'Reboque náutico • Placa final 4',
+    icon:'🛥️',
+    iconBg:'#d6eaf8',
+    year:null,
+    plateEnd:4,
+    hasKm:false,
+    hasHours:false,
+    hasIPVA:true,
+    ipvaMonth:4,
+    boatReg:false,
+    specs:[
+      ['Tipo','Reboque p/ embarcação'],
+      ['Engate','Bola 51mm (2")'],
+      ['Freio','Elétrico ou inercial'],
+      ['Pneu','ST225/75R15 ou 205/75R15'],
+      ['Pressão pneu','65 PSI (freio frio)'],
+      ['Apoios','Bunks / rolos de apoio'],
+      ['Correntes','Segurança dupla'],
+      ['Luz traseira','7 pinos'],
+    ],
+    maintenance:[
+      {id:'cb_pneus',name:'Pneus (Pressão e Estado)',icon:'⭕',
+       intervalKm:null,intervalMonths:1,
+       status:'verificar',priority:3,
+       desc:'Pressão: conforme lateral do pneu (geralmente 50–65 PSI). Pneus de reboques envelhecem rápido — substituir se > 5 anos INDEPENDENTE do desgaste. Verificar racha nas laterais.',
+       parts:['Manômetro de pneu'],
+       kmDetail:'Antes de cada uso',
+       timeDetail:'Pneus: trocar a cada 5 anos max.'},
+      {id:'cb_rolamentos',name:'Rolamentos das Rodas (Reempacotar)',icon:'🔩',
+       intervalKm:null,intervalMonths:6,
+       status:'verificar',priority:3,
+       desc:'CRÍTICO: mergulhar reboque na água deteriora os rolamentos. Rembalar com graxa marítima a cada 6 meses ou anualmente. Usar bearing buddy para proteger. Substituir se desgastados.',
+       parts:['Graxa marítima (250g)','Bearing Buddy (se não tiver)'],
+       kmDetail:'A cada 6 meses',
+       timeDetail:'Após temporada de uso'},
+      {id:'cb_luzes',name:'Luzes e Tomada Elétrica',icon:'💡',
+       intervalKm:null,intervalMonths:3,
+       status:'verificar',priority:2,
+       desc:'Luzes submersíveis ou à prova d\'água. Verificar lâmpadas traseiras, stop, pisca e ré. Limpar tomada de 7 pinos com contato elétrico. Checar antes de CADA lançamento.',
+       parts:['Lâmpadas reserva','WD-40 elétrico'],
+       kmDetail:'Antes de cada uso',
+       timeDetail:'Substituir por LED se ainda incandescente'},
+      {id:'cb_engate',name:'Engate, Correntes e Sítio de Segurança',icon:'🔗',
+       intervalKm:null,intervalMonths:3,
+       status:'verificar',priority:3,
+       desc:'Lubrificar bola e trava do engate. Verificar trava de segurança (deve fechar com click firme). Inspecionar correntes de segurança por ferrugem. Manter elo sobressalente.',
+       parts:['Graxa (bola de engate)','WD-40 (trava)'],
+       kmDetail:'A cada 3 meses',
+       timeDetail:'Verificar antes de cada uso'},
+      {id:'cb_bunks',name:'Apoios do Barco (Bunks / Rolos)',icon:'🛥️',
+       intervalKm:null,intervalMonths:6,
+       status:'verificar',priority:1,
+       desc:'Verificar tapetes de carpete dos bunks por desgaste e podridão. Verificar rolos por racha e giro. Substituir se danificados para evitar danos ao casco. Ajustar posicionamento conforme barco.',
+       parts:['Carpete de bunk (se necessário)','Rolos de bunks (se necessário)'],
+       kmDetail:'Semestral',
+       timeDetail:'Verificar estado do apoio'},
+      {id:'cb_chassi',name:'Chassi e Proteção Anticorrosiva',icon:'🏗️',
+       intervalKm:null,intervalMonths:12,
+       status:'verificar',priority:2,
+       desc:'Lavar chassi após uso em água salgada (fundamental). Aplicar anticorrosivo anualmente. Verificar soldas por trincas. Galvanizado aguenta melhor — reboque não galvanizado exige mais atenção.',
+       parts:['Anticorrosivo spray Primer','Tinta esmalte sintético'],
+       kmDetail:'Anual',
+       timeDetail:'Lavar após CADA uso em água salgada'},
+      {id:'cb_freio_inerc',name:'Sistema de Freio Inercial (se equipado)',icon:'🛑',
+       intervalKm:null,intervalMonths:12,
+       status:'verificar',priority:2,
+       desc:'Verificar cabo do freio por oxidação e ruptura. Lubrificar mecanismo de inércia. Verificar pastilhas/lonas das rodas. Ajustar tensão conforme manual.',
+       parts:['Cabo de freio (se necessário)'],
+       kmDetail:'Anual',
+       timeDetail:'Antes da temporada de uso'},
+      {id:'cb_winch',name:'Guincho / Catraca de Embarque',icon:'🔩',
+       intervalKm:null,intervalMonths:6,
+       status:'verificar',priority:1,
+       desc:'Lubrificar engrenagens e catraca com graxa. Verificar cinta ou cabo de aço por desgaste e cortes. A cinta de nylon se deteriora com UV — substituir se >5 anos ou com cortes.',
+       parts:['Graxa para engrenagens','Cinta de winch (se necessário)'],
+       kmDetail:'A cada 6 meses',
+       timeDetail:'Verificar cinta por desgaste UV'},
+    ]
+  },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+
+const STORE_KEY = 'manutv2';
+let state = JSON.parse(localStorage.getItem(STORE_KEY) || '{"done":{}}');
+function saveState(){localStorage.setItem(STORE_KEY, JSON.stringify(state))}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+
+let modalItemId = null;
+let modalVehicleId = null;
+
+function statusLabel(s){
+  const map = {vencida:'Vencida',atencao:'Atenção',ok:'Em dia',verificar:'Verificar',rotina:'Rotina'};
+  return map[s]||s;
+}
+function statusClass(s){
+  const map = {vencida:'bd',atencao:'bw',ok:'bo',verificar:'bg',rotina:'bg'};
+  return map[s]||'bg';
+}
+function chipClass(s){
+  const map = {vencida:'cd',atencao:'cw',ok:'co',verificar:'cg',rotina:'cg'};
+  return map[s]||'cg';
+}
+
+function countByStatus(v){
+  const counts = {vencida:0,atencao:0,ok:0,verificar:0,rotina:0};
+  v.maintenance.forEach(m=>{
+    const done = state.done[m.id];
+    if(done) counts.ok++;
+    else counts[m.status]=(counts[m.status]||0)+1;
+  });
+  return counts;
+}
+
+function totalVencidas(){
+  let n=0;
+  VEHICLES.forEach(v=>v.maintenance.forEach(m=>{
+    if(!state.done[m.id] && m.status==='vencida') n++;
+  }));
+  return n;
+}
+function totalAtencao(){
+  let n=0;
+  VEHICLES.forEach(v=>v.maintenance.forEach(m=>{
+    if(!state.done[m.id] && m.status==='atencao') n++;
+  }));
+  return n;
+}
+function totalIPVAVencidas(){
+  let n=0;
+  VEHICLES.forEach(v=>{
+    if(v.hasIPVA){
+      const st = ipvaStatus(v);
+      if(st==='vencida') n++;
+    }
+  });
+  return n;
+}
+
+function ipvaStatus(v){
+  if(!v.hasIPVA) return null;
+  if(TODAY.getMonth()+1 > v.ipvaMonth) return 'vencida';
+  if(TODAY.getMonth()+1 === v.ipvaMonth) return 'atencao';
+  if(v.ipvaMonth - (TODAY.getMonth()+1) <= 2) return 'atencao';
+  return 'ok';
+}
+
+function ipvaMonthStr(v){
+  return MF[v.ipvaMonth-1]+' '+TODAY.getFullYear();
+}
+
+// ── RENDER HOME ───────────────────────────────────────────────────────────────
+
+function renderHome(){
+  const tv = totalVencidas();
+  const ta = totalAtencao();
+  const ti = totalIPVAVencidas();
+  let html = '';
+
+  // Alert banners
+  if(tv>0||ti>0){
+    html += `<div class="abanner ab-d"><span class="ab-icon">🚨</span><div class="ab-body"><h3>${tv} manutenção(ões) vencida(s)${ti>0?' + '+ti+' IPVA pendente':''}!</h3><p>Itens passados do prazo precisam de atenção imediata. Veja a aba Manutenção para detalhes.</p></div></div>`;
+  } else if(ta>0){
+    html += `<div class="abanner ab-w"><span class="ab-icon">⚠️</span><div class="ab-body"><h3>${ta} item(ns) próximo(s) do vencimento</h3><p>Programe as revisões preventivas nas próximas semanas.</p></div></div>`;
+  } else {
+    html += `<div class="abanner ab-i"><span class="ab-icon">✅</span><div class="ab-body"><h3>Frota em dia!</h3><p>Nenhuma manutenção vencida no momento. Continue monitorando.</p></div></div>`;
+  }
+
+  // Summary
+  html += `<div class="srow">
+    <div class="sbox"><div class="snum" style="color:var(--danger)">${tv}</div><div class="slbl">Vencidas</div></div>
+    <div class="sbox"><div class="snum" style="color:var(--warn)">${ta}</div><div class="slbl">Atenção</div></div>
+    <div class="sbox"><div class="snum" style="color:var(--ok)">${5-VEHICLES.filter(v=>countByStatus(v).vencida>0||countByStatus(v).atencao>0).length}</div><div class="slbl">Veíc. OK</div></div>
+  </div>`;
+
+  html += '<div class="stitle">Meus Veículos</div>';
+
+  VEHICLES.forEach(v=>{
+    const c = countByStatus(v);
+    let chips = '';
+    if(c.vencida>0) chips += `<span class="chip cd">⛔ ${c.vencida} vencida${c.vencida>1?'s':''}</span>`;
+    if(c.atencao>0) chips += `<span class="chip cw">⚠️ ${c.atencao} atenção</span>`;
+    if(c.ok>0) chips += `<span class="chip co">✅ ${c.ok} em dia</span>`;
+    if(c.verificar>0 && c.vencida===0 && c.atencao===0) chips += `<span class="chip cg">🔍 ${c.verificar} verificar</span>`;
+    const ipvaSt = ipvaStatus(v);
+    if(ipvaSt==='vencida') chips += `<span class="chip cd">📋 IPVA vencido</span>`;
+    else if(ipvaSt==='atencao') chips += `<span class="chip cw">📋 IPVA próximo</span>`;
+
+    html += `<div class="card">
+      <div class="vch" onclick="toggleVehicle('hv_${v.id}')">
+        <div class="vicon" style="background:${v.iconBg}">${v.icon}</div>
+        <div class="vinfo">
+          <div class="vname">${v.name}</div>
+          <div class="vsub">${v.subtitle}</div>
+          <div class="vchips">${chips}</div>
+        </div>
+        <span class="ti" id="ti_hv_${v.id}">▼</span>
+      </div>
+      <div class="vbody" id="hv_${v.id}">
+        <div class="vcard-sec-hdr">Especificações Técnicas</div>
+        <div class="specsg">${v.specs.map(([l,val])=>`<div class="sbox2"><div class="slabel">${l}</div><div class="sval">${val}</div></div>`).join('')}</div>
+        ${v.hasKm && v.currentKm ? `<div class="vcard-sec-hdr">Quilometragem Atual: ${fmtKm(v.currentKm)}</div>` : ''}
+        ${v.hasHours ? `<div class="vcard-sec-hdr">Horas de Uso: ${v.currentHours}h • Próxima revisão: 100h</div>` : ''}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('pg-home').innerHTML = html;
+}
+
+function toggleVehicle(id){
+  const el = document.getElementById(id);
+  const ti = document.getElementById('ti_'+id);
+  const open = el.classList.toggle('open');
+  if(ti) ti.classList.toggle('open',open);
+}
+
+// ── RENDER MAINTENANCE ────────────────────────────────────────────────────────
+
+let selectedVehicle = 'lander';
+
+function renderMaintenance(){
+  const v = VEHICLES.find(x=>x.id===selectedVehicle);
+  let html = '<div class="vsel">';
+  VEHICLES.forEach(vv=>{
+    html += `<div class="vchip${vv.id===selectedVehicle?' active':''}" onclick="selectVehicle('${vv.id}')">${vv.icon} ${vv.name.split(' ').slice(0,2).join(' ')}</div>`;
+  });
+  html += '</div>';
+
+  html += `<div class="card">`;
+  html += `<div style="padding:14px 16px 8px;border-bottom:1px solid var(--border)">
+    <div style="font-size:16px;font-weight:800">${v.icon} ${v.name}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px">${v.subtitle}</div>`;
+
+  if(v.hasKm && v.currentKm) html += `<div style="font-size:13px;margin-top:6px">📍 <strong>${fmtKm(v.currentKm)}</strong> rodados</div>`;
+  if(v.hasHours) html += `<div style="font-size:13px;margin-top:6px">⏱️ <strong>${v.currentHours}h</strong> de uso</div>`;
+  if(!v.hasKm && !v.hasHours) html += `<div style="font-size:12px;color:var(--muted);margin-top:6px">Use a data/período para controle</div>`;
+
+  html += `</div>`;
+
+  // Group by status
+  const order = ['vencida','atencao','verificar','ok','rotina'];
+  const grouped = {};
+  order.forEach(s=>grouped[s]=[]);
+  v.maintenance.forEach(m=>{
+    const s = state.done[m.id] ? 'ok' : m.status;
+    grouped[s].push(m);
+  });
+
+  const labels = {vencida:'🔴 Vencidas — Fazer Agora',atencao:'🟡 Atenção — Próximo do Prazo',verificar:'🔍 Verificar Data',ok:'✅ Em Dia',rotina:'🔄 Procedimentos de Rotina'};
+
+  order.forEach(s=>{
+    if(grouped[s].length===0) return;
+    html += `<div class="dvlbl" style="margin:10px 14px 6px;font-size:11px">${labels[s]}</div>`;
+    grouped[s].forEach(m=>{
+      const done = state.done[m.id];
+      const displayStatus = done ? 'ok' : m.status;
+      const bclass = done ? 'bo' : statusClass(m.status);
+      const blabel = done ? 'Feito ✓' : statusLabel(m.status);
+      html += `<div class="mitem">
+        <div class="mhdr" onclick="toggleMaint('md_${m.id}')">
+          <span style="font-size:20px">${m.icon}</span>
+          <div class="mname">${m.name}${done ? `<div class="done-since">✓ ${done.doneAt}</div>` : ''}</div>
+          <span class="badge ${bclass}">${blabel}</span>
+          <span class="ti" id="ti_md_${m.id}">▼</span>
+        </div>
+        <div class="mdetail" id="md_${m.id}">
+          <div class="dgrid">
+            ${m.intervalKm ? `<span class="dl">Intervalo (km)</span><span class="dv">A cada ${m.intervalKm.toLocaleString('pt-BR')} km</span>` : ''}
+            ${m.intervalH ? `<span class="dl">Intervalo (h)</span><span class="dv">A cada ${m.intervalH}h</span>` : ''}
+            ${m.intervalMonths ? `<span class="dl">Intervalo (tempo)</span><span class="dv">A cada ${m.intervalMonths} meses</span>` : ''}
+            ${m.kmDetail ? `<span class="dl">Situação km</span><span class="dv">${m.kmDetail}</span>` : ''}
+            ${m.hDetail ? `<span class="dl">Situação horas</span><span class="dv">${m.hDetail}</span>` : ''}
+            ${m.timeDetail ? `<span class="dl">Referência</span><span class="dv">${m.timeDetail}</span>` : ''}
+            ${m.lastDateStr && !done ? `<span class="dl">Última vez</span><span class="dv">${m.lastDateStr}</span>` : ''}
+            ${done ? `<span class="dl">Realizado em</span><span class="dv" style="color:var(--ok)">${done.doneAt}</span>` : ''}
+          </div>
+          <div class="descbox">${m.desc}</div>
+          ${m.parts && m.parts.length > 0 ? `<div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--muted)">PEÇAS/INSUMOS</div><ul class="parts-list">${m.parts.map(p=>`<li>${p}</li>`).join('')}</ul>` : ''}
+          <button class="btn-done${done?' done-now':''}" onclick="openModal('${v.id}','${m.id}','${m.name.replace(/'/g,'\\\'')}')">${done ? '↩️ Redefinir' : '✅ Marcar como Feita'}</button>
+        </div>
+      </div>`;
+    });
+  });
+
+  html += `</div>`;
+  document.getElementById('pg-manut').innerHTML = html;
+}
+
+function selectVehicle(id){
+  selectedVehicle = id;
+  renderMaintenance();
+}
+
+function toggleMaint(id){
+  const el = document.getElementById(id);
+  const ti = document.getElementById('ti_'+id);
+  const open = el.classList.toggle('open');
+  if(ti) ti.classList.toggle('open',open);
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+
+function openModal(vid,mid,mname){
+  modalVehicleId = vid;
+  modalItemId = mid;
+  const v = VEHICLES.find(x=>x.id===vid);
+  document.getElementById('modal-title').textContent = '✅ '+mname;
+  const now = TODAY;
+  document.getElementById('modal-date').value = now.getFullYear()+'-'+ String(now.getMonth()+1).padStart(2,'0');
+  const kmWrap = document.getElementById('modal-km-wrap');
+  if(v.hasKm && v.currentKm){
+    kmWrap.style.display='block';
+    document.getElementById('modal-km').value = v.currentKm;
+  } else {
+    kmWrap.style.display='none';
+    document.getElementById('modal-km').value='';
+  }
+  // If already done, clear
+  if(state.done[mid]){
+    delete state.done[mid];
+    saveState();
+    closeModal();
+    renderAll();
+    return;
+  }
+  document.getElementById('modal').style.display='flex';
+}
+
+function closeModal(){
+  document.getElementById('modal').style.display='none';
+  modalItemId=null;
+  modalVehicleId=null;
+}
+
+function saveModal(){
+  const date = document.getElementById('modal-date').value;
+  const km = document.getElementById('modal-km').value;
+  if(!date){alert('Informe a data');return;}
+  const [y,m] = date.split('-');
+  let label = MS[parseInt(m)-1]+'/'+y;
+  if(km) label += ' • '+parseInt(km).toLocaleString('pt-BR')+'km';
+  state.done[modalItemId] = {doneAt: label, ts: Date.now()};
+  saveState();
+  closeModal();
+  renderAll();
+}
+
+// ── RENDER IPVA ───────────────────────────────────────────────────────────────
+
+function renderIPVA(){
+  let html = '';
+  html += `<div class="inote">📌 <strong>Datas por estado:</strong> Os meses abaixo seguem o calendário mais comum (SP/MG — final da placa = mês). Verifique seu estado no site do Detran local. Para <strong>carretas semi-reboques</strong>, o IPVA pode ser isento ou reduzido conforme o estado.</div>`;
+
+  VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
+    const st = ipvaStatus(v);
+    const bclass = st==='vencida'?'bd':st==='atencao'?'bw':'bo';
+    const blabel = st==='vencida'?'⚠️ Vencido':st==='atencao'?'📅 Este mês':'✅ Em dia';
+    html += `<div class="card">
+      <div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px">
+        <span style="font-size:28px">${v.icon}</span>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700">${v.name}</div>
+          <div style="font-size:12px;color:var(--muted)">${v.subtitle}</div>
+        </div>
+        <span class="badge ${bclass}">${blabel}</span>
+      </div>
+      <div class="ipva-row"><span class="ipva-lbl">Final da placa</span><span class="ipva-val">${v.plateEnd}</span></div>
+      <div class="ipva-row"><span class="ipva-lbl">Mês do IPVA</span><span class="ipva-val">${MF[v.ipvaMonth-1]}</span></div>
+      <div class="ipva-row"><span class="ipva-lbl">Vencimento ${TODAY.getFullYear()}</span><span class="ipva-val" style="color:${st==='vencida'?'var(--danger)':st==='atencao'?'var(--warn)':'var(--ok)'}">${ipvaMonthStr(v)}</span></div>
+      <div class="ipva-row"><span class="ipva-lbl">Licenciamento (CRLV)</span><span class="ipva-val">Junto ao IPVA</span></div>
+      <div class="ipva-row"><span class="ipva-lbl">Status</span><span class="ipva-val" style="color:${st==='vencida'?'var(--danger)':st==='atencao'?'var(--warn)':'var(--ok)'}">${st==='vencida'?'REGULARIZAR URGENTE':st==='atencao'?'Vence em breve':'Em dia'}</span></div>
+    </div>`;
+  });
+
+  html += `<div class="card">
+    <div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px">
+      <span style="font-size:28px">⛵</span>
+      <div style="flex:1"><div style="font-size:15px;font-weight:700">Barco — Motor F60</div><div style="font-size:12px;color:var(--muted)">Embarcação</div></div>
+      <span class="badge bg">📋 Marinha</span>
+    </div>
+    <div class="ipva-row"><span class="ipva-lbl">Registro</span><span class="ipva-val">Capitania dos Portos</span></div>
+    <div class="ipva-row"><span class="ipva-lbl">IPVA</span><span class="ipva-val">Não se aplica</span></div>
+    <div class="ipva-row"><span class="ipva-lbl">Taxa de inscrição</span><span class="ipva-val">Renovação anual</span></div>
+    <div class="ipva-row"><span class="ipva-lbl">Vistoria</span><span class="ipva-val">Verificar Capitania</span></div>
+    <div class="ipva-row"><span class="ipva-lbl">Documentos</span><span class="ipva-val">TIE + TAR + Lista equipamentos</span></div>
+  </div>`;
+
+  html += `<div class="card">
+    <div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px">
+      <span style="font-size:28px">🚜</span>
+      <div style="flex:1"><div style="font-size:15px;font-weight:700">Quadriciclo FourTrax 4×4</div><div style="font-size:12px;color:var(--muted)">Veículo off-road</div></div>
+      <span class="badge bg">Off-road</span>
+    </div>
+    <div class="ipva-row"><span class="ipva-lbl">Uso em via pública</span><span class="ipva-val">Não licenciado</span></div>
+    <div class="ipva-row"><span class="ipva-lbl">IPVA</span><span class="ipva-val">Não se aplica</span></div>
+    <div class="ipva-row"><span class="ipva-lbl">Observação</span><span class="ipva-val">Uso restrito a propriedades</span></div>
+  </div>`;
+
+  html += `<div class="inote" style="margin-top:4px">💡 <strong>FourTrax:</strong> O nome "FourTrax" é da linha Honda. Se o veículo é da Yamaha, pode ser um <em>Grizzly</em> ou <em>Kodiak</em>. A manutenção listada é válida para ambas as marcas na mesma cilindrada.</div>`;
+
+  document.getElementById('pg-ipva').innerHTML = html;
+}
+
+// ── RENDER FORECAST ───────────────────────────────────────────────────────────
+
+function renderForecast(){
+  const end = addMonths(TODAY, 6);
+
+  // Build events
+  const events = [];
+
+  // IPVA overdue
+  VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
+    const st = ipvaStatus(v);
+    if(st==='vencida'){
+      events.push({
+        date: new Date(TODAY.getFullYear(), v.ipvaMonth-1, 1),
+        monthKey: `${TODAY.getFullYear()}-${String(v.ipvaMonth).padStart(2,'0')}`,
+        title:`IPVA + Licenciamento — Regularizar`,
+        sub:`${v.icon} ${v.name} • Placa final ${v.plateEnd} • MÊS ${v.ipvaMonth} — JÁ VENCEU`,
+        level:'danger',
+        past:true
+      });
+    } else if(st==='atencao'){
+      events.push({
+        date: new Date(TODAY.getFullYear(), v.ipvaMonth-1, 1),
+        monthKey: `${TODAY.getFullYear()}-${String(v.ipvaMonth).padStart(2,'0')}`,
+        title:`IPVA + Licenciamento`,
+        sub:`${v.icon} ${v.name} • Placa final ${v.plateEnd}`,
+        level:'warn'
+      });
+    }
+  });
+
+  // Maintenance due NOW (vencidas)
+  VEHICLES.forEach(v=>{
+    v.maintenance.forEach(m=>{
+      if(state.done[m.id]) return;
+      if(m.status==='vencida'){
+        events.push({
+          date: new Date(TODAY),
+          monthKey: `${TODAY.getFullYear()}-${String(TODAY.getMonth()+1).padStart(2,'0')}`,
+          title: m.name,
+          sub: `${v.icon} ${v.name} — VENCIDA`,
+          level:'danger',
+          past:true
+        });
+      }
+    });
+  });
+
+  // Lander km forecast
+  const lander = VEHICLES.find(x=>x.id==='lander');
+  const kmIntervals = [
+    {name:'Troca de Óleo + Corrente',km:3000,baseKm:60000},
+    {name:'Filtro de Ar (limpeza) + Verificação Vela',km:6000,baseKm:60000},
+    {name:'Troca de Óleo',km:3000,baseKm:63000},
+    {name:'Troca de Óleo + Filtro Ar + Vela',km:12000,baseKm:60000},
+  ];
+  kmIntervals.forEach(item=>{
+    const nextKm = item.baseKm + item.km;
+    const currentKm = lander.currentKm;
+    const kmNeeded = nextKm - currentKm;
+    if(kmNeeded <= 0) return;
+    const monthsNeeded = kmNeeded / lander.avgKmMonth;
+    const dt = addMonths(TODAY, Math.round(monthsNeeded));
+    if(dt <= end){
+      const mk = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+      events.push({
+        date:dt,
+        monthKey:mk,
+        title:item.name,
+        sub:`🏍️ Yamaha Lander 250 • ~${nextKm.toLocaleString('pt-BR')}km`,
+        level:'warn'
+      });
+    }
+  });
+
+  // F60 100h service forecast
+  const f60 = VEHICLES.find(x=>x.id==='f60');
+  const f60NextH = 100;
+  const f60HNeeded = f60NextH - f60.currentHours;
+  const f60Months = f60HNeeded / f60.avgHoursMonth;
+  const f60Date = addMonths(TODAY, Math.round(f60Months));
+  if(f60Date <= end){
+    const mk = `${f60Date.getFullYear()}-${String(f60Date.getMonth()+1).padStart(2,'0')}`;
+    events.push({
+      date:f60Date,
+      monthKey:mk,
+      title:'Revisão 100 Horas (OBRIGATÓRIA)',
+      sub:'⛵ Motor Yamaha F60 • Óleo, filtro, velas, zincos, pé',
+      level:'danger'
+    });
+  }
+
+  // FourTrax annual
+  const ftDate = addMonths(TODAY, 4);
+  if(ftDate <= end){
+    const mk = `${ftDate.getFullYear()}-${String(ftDate.getMonth()+1).padStart(2,'0')}`;
+    events.push({
+      date:ftDate,
+      monthKey:mk,
+      title:'Revisão Anual — Verificar e agendar',
+      sub:'🚜 Quadriciclo FourTrax 4×4 • Óleo, filtro, diferencial',
+      level:'info'
+    });
+  }
+
+  // Carreta barco rolamentos
+  const cbDate = addMonths(TODAY, 3);
+  const cbMk = `${cbDate.getFullYear()}-${String(cbDate.getMonth()+1).padStart(2,'0')}`;
+  events.push({
+    date:cbDate,
+    monthKey:cbMk,
+    title:'Reempacotar Rolamentos das Rodas',
+    sub:'🛥️ Carreta do Barco • Graxa marítima obrigatória',
+    level:'warn'
+  });
+
+  // Carreta rod lubrificacao
+  const crDate = addMonths(TODAY, 3);
+  const crMk = `${crDate.getFullYear()}-${String(crDate.getMonth()+1).padStart(2,'0')}`;
+  events.push({
+    date:crDate,
+    monthKey:crMk,
+    title:'Lubrificação Quinta-Roda + Revisão Geral',
+    sub:'🚛 Carreta Rodoviária • Graxa, freios, luzes',
+    level:'info'
+  });
+
+  // Sort by date
+  events.sort((a,b)=>a.date-b.date);
+
+  // Group by month
+  const monthGroups = {};
+  const monthOrder = [];
+  events.forEach(e=>{
+    if(!monthGroups[e.monthKey]){
+      monthGroups[e.monthKey]=[];
+      monthOrder.push(e.monthKey);
+    }
+    monthGroups[e.monthKey].push(e);
+  });
+
+  let html = '';
+
+  // Urgente / já vencidas
+  const vencidas = events.filter(e=>e.past);
+  if(vencidas.length>0){
+    html += `<div class="abanner ab-d"><span class="ab-icon">🚨</span><div class="ab-body"><h3>${vencidas.length} item(ns) já vencidos!</h3><p>Itens abaixo de manutenção e IPVA já passaram do prazo. Regularize o mais rápido possível.</p></div></div>`;
+  }
+
+  html += `<div class="inote">📅 Previsão para os próximos 6 meses baseada em: Lander ~1.500km/mês • Motor F60 ~8h/mês. Ajuste conforme seu uso real.</div>`;
+
+  html += `<div class="stitle">Cronograma Jun–Dez 2026</div>`;
+
+  const uniqueMonths = [...new Set(monthOrder)];
+  uniqueMonths.forEach(mk=>{
+    const [y,m] = mk.split('-');
+    const isPast = parseInt(y) < TODAY.getFullYear() || (parseInt(y)===TODAY.getFullYear() && parseInt(m) < TODAY.getMonth()+1);
+    const isCurrent = parseInt(y)===TODAY.getFullYear() && parseInt(m)===TODAY.getMonth()+1;
+    html += `<div class="fcm">
+      <div class="fcmtitle">${isPast?'⚠️ ':isCurrent?'📍 ':''}${MF[parseInt(m)-1]} ${y}${isPast?' — VENCIDO':isCurrent?' — Agora':''}</div>`;
+    monthGroups[mk].forEach(e=>{
+      html += `<div class="fci">
+        <div class="fcstripe fcstripe-${e.level}"></div>
+        <div class="fcbody">
+          <div class="fctitle">${e.title}</div>
+          <div class="fcsub">${e.sub}</div>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  document.getElementById('pg-alerta').innerHTML = html;
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+
+function showPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(el=>el.classList.remove('active'));
+  document.getElementById('pg-'+p).classList.add('active');
+  document.querySelector(`.nb[data-p="${p}"]`).classList.add('active');
+  if(p==='manut') renderMaintenance();
+  else if(p==='ipva') renderIPVA();
+  else if(p==='alerta') renderForecast();
+  window.scrollTo(0,0);
+}
+
+document.querySelectorAll('.nb').forEach(el=>{
+  el.addEventListener('click',()=>showPage(el.dataset.p));
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+
+function renderAll(){
+  renderHome();
+  updateBadges();
+  updateHeader();
+}
+
+function updateHeader(){
+  const tv = totalVencidas();
+  const ti = totalIPVAVencidas();
+  const total = tv + ti;
+  const pill = document.getElementById('hdralert');
+  if(total>0){
+    pill.innerHTML = `<div class="hdr-pill">🚨 ${total} urgente${total>1?'s':''}</div>`;
+  } else {
+    pill.innerHTML = '';
+  }
+}
+
+function updateBadges(){
+  const tv = totalVencidas();
+  const ti = totalIPVAVencidas();
+  const nbManut = document.getElementById('nb-manut');
+  const nbIPVA = document.getElementById('nb-ipva');
+  nbManut.textContent = tv>0?tv:'';
+  nbManut.style.display = tv>0?'flex':'none';
+  nbIPVA.textContent = ti>0?ti:'';
+  nbIPVA.style.display = ti>0?'flex':'none';
+}
+
+function initDate(){
+  const d = TODAY;
+  const days = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  document.getElementById('hdrdate').textContent = `${days[d.getDay()]}, ${d.getDate()} de ${MF[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+// Close modal on backdrop click
+document.getElementById('modal').addEventListener('click',function(e){
+  if(e.target===this) closeModal();
+});
+
+initDate();
+renderAll();
+</script>
+</body>
+</html>
