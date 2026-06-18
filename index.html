@@ -213,8 +213,10 @@ body{max-width:430px;margin:0 auto;position:relative;overflow-x:hidden}
 <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:flex-end;justify-content:center">
   <div style="background:white;border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:430px">
     <div style="font-size:16px;font-weight:700;margin-bottom:16px" id="modal-title">Marcar como Feita</div>
-    <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Data realizada</label>
-    <input type="month" id="modal-date" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:12px">
+    <div id="modal-date-wrap">
+      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Data realizada</label>
+      <input type="month" id="modal-date" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:12px">
+    </div>
     <div id="modal-km-wrap">
       <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Quilometragem (km)</label>
       <input type="number" id="modal-km" placeholder="Ex: 60000" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:12px">
@@ -722,6 +724,69 @@ function saveState(){
   pushSync();
 }
 
+// Dynamic vehicle km/hours (falls back to hardcoded defaults)
+function getVehicleKm(v){
+  return (state.vehicles && state.vehicles[v.id] && state.vehicles[v.id].currentKm != null)
+    ? state.vehicles[v.id].currentKm : v.currentKm;
+}
+function getVehicleHours(v){
+  return (state.vehicles && state.vehicles[v.id] && state.vehicles[v.id].currentHours != null)
+    ? state.vehicles[v.id].currentHours : v.currentHours;
+}
+
+// Recalculate item status dynamically based on when it was last done + intervals
+function calcItemStatus(v, m){
+  const done = state.done[m.id];
+  if(!done) return m.status;
+  const curKm = getVehicleKm(v);
+  const curH  = getVehicleHours(v);
+  if(v.hasKm && m.intervalKm && done.doneKm != null){
+    const next = done.doneKm + m.intervalKm;
+    if(curKm >= next) return 'vencida';
+    if(curKm >= next - m.intervalKm * 0.15) return 'atencao';
+    return 'ok';
+  }
+  if(v.hasHours && m.intervalH && done.doneH != null){
+    const next = done.doneH + m.intervalH;
+    if(curH >= next) return 'vencida';
+    if(curH >= next - m.intervalH * 0.15) return 'atencao';
+    return 'ok';
+  }
+  if(m.intervalMonths){
+    const nextDate = addMonths(new Date(done.ts), m.intervalMonths);
+    const daysLeft = Math.floor((nextDate - TODAY) / 86400000);
+    if(daysLeft <= 0) return 'vencida';
+    if(daysLeft <= 30) return 'atencao';
+    return 'ok';
+  }
+  return 'ok';
+}
+
+// Build next-service details string for display
+function getNextInfo(v, m){
+  const done = state.done[m.id];
+  if(!done) return null;
+  const curKm = getVehicleKm(v);
+  const curH  = getVehicleHours(v);
+  const parts = [];
+  if(v.hasKm && m.intervalKm && done.doneKm != null){
+    const next = done.doneKm + m.intervalKm;
+    const left = next - curKm;
+    parts.push('Próximo: '+next.toLocaleString('pt-BR')+'km '+(left>0?'(faltam '+left.toLocaleString('pt-BR')+'km)':'(VENCIDA)'));
+  }
+  if(v.hasHours && m.intervalH && done.doneH != null){
+    const next = done.doneH + m.intervalH;
+    const left = next - curH;
+    parts.push('Próximo: '+next+'h '+(left>0?'(faltam '+left+'h)':'(VENCIDA)'));
+  }
+  if(m.intervalMonths){
+    const nextDate = addMonths(new Date(done.ts), m.intervalMonths);
+    const daysLeft = Math.floor((nextDate - TODAY) / 86400000);
+    parts.push('Próximo: '+fmtDate(nextDate)+(daysLeft>0?' (em '+(daysLeft>=30?Math.round(daysLeft/30)+' mês(es)':daysLeft+' dias')+')':' (VENCIDA)'));
+  }
+  return parts.length ? parts.join(' • ') : null;
+}
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
 let modalItemId = null;
@@ -743,9 +808,8 @@ function chipClass(s){
 function countByStatus(v){
   const counts = {vencida:0,atencao:0,ok:0,verificar:0,rotina:0};
   v.maintenance.forEach(m=>{
-    const done = state.done[m.id];
-    if(done) counts.ok++;
-    else counts[m.status]=(counts[m.status]||0)+1;
+    const s = calcItemStatus(v, m);
+    counts[s] = (counts[s]||0)+1;
   });
   return counts;
 }
@@ -753,14 +817,14 @@ function countByStatus(v){
 function totalVencidas(){
   let n=0;
   VEHICLES.forEach(v=>v.maintenance.forEach(m=>{
-    if(!state.done[m.id] && m.status==='vencida') n++;
+    if(calcItemStatus(v,m)==='vencida') n++;
   }));
   return n;
 }
 function totalAtencao(){
   let n=0;
   VEHICLES.forEach(v=>v.maintenance.forEach(m=>{
-    if(!state.done[m.id] && m.status==='atencao') n++;
+    if(calcItemStatus(v,m)==='atencao') n++;
   }));
   return n;
 }
@@ -900,6 +964,9 @@ let selectedVehicle = 'lander';
 
 function renderMaintenance(){
   const v = VEHICLES.find(x=>x.id===selectedVehicle);
+  const curKm = getVehicleKm(v);
+  const curH  = getVehicleHours(v);
+
   let html = '<div class="vsel">';
   VEHICLES.forEach(vv=>{
     html += `<div class="vchip${vv.id===selectedVehicle?' active':''}" onclick="selectVehicle('${vv.id}')">${vv.icon} ${vv.name.split(' ').slice(0,2).join(' ')}</div>`;
@@ -911,31 +978,44 @@ function renderMaintenance(){
     <div style="font-size:16px;font-weight:800">${v.icon} ${v.name}</div>
     <div style="font-size:12px;color:var(--muted);margin-top:2px">${v.subtitle}</div>`;
 
-  if(v.hasKm && v.currentKm) html += `<div style="font-size:13px;margin-top:6px">📍 <strong>${fmtKm(v.currentKm)}</strong> rodados</div>`;
-  if(v.hasHours) html += `<div style="font-size:13px;margin-top:6px">⏱️ <strong>${v.currentHours}h</strong> de uso</div>`;
-  if(!v.hasKm && !v.hasHours) html += `<div style="font-size:12px;color:var(--muted);margin-top:6px">Use a data/período para controle</div>`;
-
+  if(v.hasKm && curKm){
+    html += `<div style="font-size:13px;margin-top:8px;display:flex;align-items:center;gap:8px">
+      📍 <strong>${fmtKm(curKm)}</strong> rodados
+      <button onclick="openEditVehicle('${v.id}')" style="background:var(--primary);color:white;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer">✏️ Atualizar km</button>
+    </div>`;
+  }
+  if(v.hasHours){
+    html += `<div style="font-size:13px;margin-top:8px;display:flex;align-items:center;gap:8px">
+      ⏱️ <strong>${curH}h</strong> de uso
+      <button onclick="openEditVehicle('${v.id}')" style="background:var(--primary);color:white;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer">✏️ Atualizar horas</button>
+    </div>`;
+  }
+  if(!v.hasKm && !v.hasHours){
+    html += `<div style="font-size:12px;color:var(--muted);margin-top:6px">Controle por data/período</div>`;
+  }
   html += `</div>`;
 
-  // Group by status
+  // Group by dynamic status
   const order = ['vencida','atencao','verificar','ok','rotina'];
   const grouped = {};
   order.forEach(s=>grouped[s]=[]);
   v.maintenance.forEach(m=>{
-    const s = state.done[m.id] ? 'ok' : m.status;
-    grouped[s].push(m);
+    const s = calcItemStatus(v, m);
+    (grouped[s] || (grouped['verificar'])).push(m);
   });
 
-  const labels = {vencida:'🔴 Vencidas — Fazer Agora',atencao:'🟡 Atenção — Próximo do Prazo',verificar:'🔍 Verificar Data',ok:'✅ Em Dia',rotina:'🔄 Procedimentos de Rotina'};
+  const labels = {vencida:'🔴 Vencidas — Fazer Agora',atencao:'🟡 Atenção — Próximo do Prazo',verificar:'🔍 Verificar Data',ok:'✅ Em Dia',rotina:'🔄 Rotina'};
 
   order.forEach(s=>{
-    if(grouped[s].length===0) return;
+    if(!grouped[s] || grouped[s].length===0) return;
     html += `<div class="dvlbl" style="margin:10px 14px 6px;font-size:11px">${labels[s]}</div>`;
     grouped[s].forEach(m=>{
       const done = state.done[m.id];
-      const displayStatus = done ? 'ok' : m.status;
-      const bclass = done ? 'bo' : statusClass(m.status);
-      const blabel = done ? 'Feito ✓' : statusLabel(m.status);
+      const displayStatus = calcItemStatus(v, m);
+      const bclass = statusClass(displayStatus);
+      const blabel = done ? (displayStatus==='ok'?'Feito ✓':statusLabel(displayStatus)+' — refazer') : statusLabel(displayStatus);
+      const nextInfo = getNextInfo(v, m);
+
       html += `<div class="mitem">
         <div class="mhdr" onclick="toggleMaint('md_${m.id}')">
           <span style="font-size:20px">${m.icon}</span>
@@ -945,18 +1025,20 @@ function renderMaintenance(){
         </div>
         <div class="mdetail" id="md_${m.id}">
           <div class="dgrid">
-            ${m.intervalKm ? `<span class="dl">Intervalo (km)</span><span class="dv">A cada ${m.intervalKm.toLocaleString('pt-BR')} km</span>` : ''}
+            ${m.intervalKm ? `<span class="dl">Intervalo</span><span class="dv">A cada ${m.intervalKm.toLocaleString('pt-BR')} km</span>` : ''}
             ${m.intervalH ? `<span class="dl">Intervalo (h)</span><span class="dv">A cada ${m.intervalH}h</span>` : ''}
             ${m.intervalMonths ? `<span class="dl">Intervalo (tempo)</span><span class="dv">A cada ${m.intervalMonths} meses</span>` : ''}
-            ${m.kmDetail ? `<span class="dl">Situação km</span><span class="dv">${m.kmDetail}</span>` : ''}
-            ${m.hDetail ? `<span class="dl">Situação horas</span><span class="dv">${m.hDetail}</span>` : ''}
-            ${m.timeDetail ? `<span class="dl">Referência</span><span class="dv">${m.timeDetail}</span>` : ''}
-            ${m.lastDateStr && !done ? `<span class="dl">Última vez</span><span class="dv">${m.lastDateStr}</span>` : ''}
-            ${done ? `<span class="dl">Realizado em</span><span class="dv" style="color:var(--ok)">${done.doneAt}</span>` : ''}
+            ${done ? `<span class="dl">Realizado em</span><span class="dv" style="color:var(--ok)">${done.doneAt}</span>` : (m.lastDateStr ? `<span class="dl">Última vez</span><span class="dv">${m.lastDateStr}</span>` : '')}
+            ${nextInfo ? `<span class="dl">Próximo serviço</span><span class="dv" style="color:${displayStatus==='ok'?'var(--ok)':displayStatus==='atencao'?'var(--warn)':'var(--danger)'}">${nextInfo}</span>` : (m.kmDetail ? `<span class="dl">Situação km</span><span class="dv">${m.kmDetail}</span>` : '')}
+            ${!done && m.hDetail ? `<span class="dl">Situação horas</span><span class="dv">${m.hDetail}</span>` : ''}
+            ${!done && m.timeDetail ? `<span class="dl">Referência</span><span class="dv">${m.timeDetail}</span>` : ''}
           </div>
           <div class="descbox">${m.desc}</div>
           ${m.parts && m.parts.length > 0 ? `<div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--muted)">PEÇAS/INSUMOS</div><ul class="parts-list">${m.parts.map(p=>`<li>${p}</li>`).join('')}</ul>` : ''}
-          <button class="btn-done${done?' done-now':''}" onclick="openModal('${v.id}','${m.id}','${m.name.replace(/'/g,'\\\'')}')">${done ? '↩️ Redefinir' : '✅ Marcar como Feita'}</button>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button class="btn-done" onclick="openModal('${v.id}','${m.id}','${m.name.replace(/'/g,'\\\'')}')" style="flex:1">✅ ${done ? 'Registrar novamente' : 'Marcar como Feita'}</button>
+            ${done ? `<button class="btn-done done-now" onclick="undoMaint('${v.id}','${m.id}')" style="flex:0 0 auto">↩️ Desfazer</button>` : ''}
+          </div>
         </div>
       </div>`;
     });
@@ -986,34 +1068,76 @@ function openModal(vid,mid,mname){
   modalItemId = mid;
   const v = VEHICLES.find(x=>x.id===vid);
   document.getElementById('modal-title').textContent = '✅ '+mname;
+  document.getElementById('modal-date-wrap').style.display='block';
   const now = TODAY;
-  document.getElementById('modal-date').value = now.getFullYear()+'-'+ String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('modal-date').value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   const kmWrap = document.getElementById('modal-km-wrap');
-  if(v.hasKm && v.currentKm){
+  const curKm = getVehicleKm(v);
+  if(v.hasKm && curKm){
     kmWrap.style.display='block';
-    document.getElementById('modal-km').value = v.currentKm;
+    document.querySelector('#modal-km-wrap label').textContent = 'Quilometragem (km)';
+    document.getElementById('modal-km').value = curKm;
+    document.getElementById('modal-km').placeholder = 'Ex: '+curKm;
   } else {
     kmWrap.style.display='none';
     document.getElementById('modal-km').value='';
   }
-  // If already done, clear
-  if(state.done[mid]){
-    delete state.done[mid];
-    saveState();
-    closeModal();
-    renderAll();
-    return;
+  document.getElementById('modal').style.display='flex';
+}
+
+function openEditVehicle(vid){
+  const v = VEHICLES.find(x=>x.id===vid);
+  if(!v || (!v.hasKm && !v.hasHours)) return;
+  modalType = 'vehicle';
+  modalVehicleId = vid;
+  document.getElementById('modal-title').textContent = v.hasKm ? '📍 Atualizar Quilometragem' : '⏱️ Atualizar Horas de Uso';
+  document.getElementById('modal-date-wrap').style.display='none';
+  const kmWrap = document.getElementById('modal-km-wrap');
+  kmWrap.style.display='block';
+  const lbl = document.querySelector('#modal-km-wrap label');
+  const inp = document.getElementById('modal-km');
+  if(v.hasKm){
+    lbl.textContent = 'Quilometragem atual (km)';
+    inp.placeholder = 'Ex: 62000';
+    inp.value = getVehicleKm(v)||'';
+  } else {
+    lbl.textContent = 'Horas de uso atuais';
+    inp.placeholder = 'Ex: 85';
+    inp.value = getVehicleHours(v)||'';
   }
   document.getElementById('modal').style.display='flex';
+}
+
+function undoMaint(vid, mid){
+  delete state.done[mid];
+  saveState();
+  renderAll();
+  renderMaintenance();
+  showSyncToast('↩️ Marcação removida.');
 }
 
 function closeModal(){
   document.getElementById('modal').style.display='none';
   modalItemId=null;
   modalVehicleId=null;
+  modalType='manut';
 }
 
 function saveModal(){
+  if(modalType==='vehicle'){
+    const val = parseInt(document.getElementById('modal-km').value);
+    if(!val || val <= 0){ alert('Informe um valor válido.'); return; }
+    if(!state.vehicles) state.vehicles={};
+    if(!state.vehicles[modalVehicleId]) state.vehicles[modalVehicleId]={};
+    const v = VEHICLES.find(x=>x.id===modalVehicleId);
+    if(v.hasKm) state.vehicles[modalVehicleId].currentKm = val;
+    else if(v.hasHours) state.vehicles[modalVehicleId].currentHours = val;
+    saveState();
+    closeModal();
+    renderAll();
+    renderMaintenance();
+    return;
+  }
   const date = document.getElementById('modal-date').value;
   if(!date){alert('Informe a data');return;}
   const [y,m] = date.split('-');
@@ -1023,16 +1147,20 @@ function saveModal(){
     state.ipva[modalIPVAKey] = {paidAt: label, ts: Date.now()};
     saveState();
     closeModal();
-    modalType='manut';
     renderAll();
     showPage('ipva');
   } else {
+    const v = VEHICLES.find(x=>x.id===modalVehicleId);
     const km = document.getElementById('modal-km').value;
+    const doneKm = (v && v.hasKm && km) ? parseInt(km) : null;
+    const doneH  = (v && v.hasHours) ? getVehicleHours(v) : null;
     if(km) label += ' • '+parseInt(km).toLocaleString('pt-BR')+'km';
-    state.done[modalItemId] = {doneAt: label, ts: Date.now()};
+    if(!km && doneH) label += ' • '+doneH+'h';
+    state.done[modalItemId] = {doneAt: label, doneKm, doneH, ts: Date.now()};
     saveState();
     closeModal();
     renderAll();
+    renderMaintenance();
   }
 }
 
