@@ -874,10 +874,13 @@ function openIPVAModal(vid, tipo, label){
   modalType = 'ipva';
   modalIPVAKey = vid+'_'+tipo;
   document.getElementById('modal-title').textContent = label;
-  document.getElementById('modal-km-wrap').style.display = 'none';
+  document.getElementById('modal-date-wrap').style.display='block';
+  const inp = document.getElementById('modal-date');
+  inp.type = 'month';
   const now = TODAY;
-  document.getElementById('modal-date').value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  document.getElementById('modal').style.display = 'flex';
+  inp.value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('modal-km-wrap').style.display='none';
+  document.getElementById('modal').style.display='flex';
 }
 
 function undoIPVAPago(vid, tipo){
@@ -890,6 +893,37 @@ function undoIPVAPago(vid, tipo){
 
 function ipvaMonthStr(v){
   return MF[v.ipvaMonth-1]+' '+TODAY.getFullYear();
+}
+
+function fmtDateBR(iso){
+  if(!iso) return null;
+  const [y,m,d] = iso.split('-');
+  return d+'/'+m+'/'+y;
+}
+
+function vencCountdown(iso, pago){
+  if(!iso) return null;
+  if(pago) return `<span style="color:var(--ok)">✅ Pago</span>`;
+  const d = new Date(iso+'T00:00:00');
+  const days = Math.floor((d - TODAY) / 86400000);
+  const date = fmtDateBR(iso);
+  if(days < 0)  return `${date} <span style="color:var(--danger);font-weight:700">⚠️ Venceu há ${-days} dia(s)</span>`;
+  if(days === 0) return `${date} <span style="color:var(--danger);font-weight:700">⚠️ Vence HOJE!</span>`;
+  if(days <= 7)  return `${date} <span style="color:var(--danger);font-weight:700">⚠️ Faltam ${days} dias</span>`;
+  if(days <= 30) return `${date} <span style="color:var(--warn);font-weight:700">🟡 Faltam ${days} dias</span>`;
+  return `${date} <span style="color:var(--ok)">✅ Faltam ${days} dias</span>`;
+}
+
+function openIPVAVencModal(key, titulo){
+  modalType = 'ipvavenc';
+  modalIPVAKey = key;
+  document.getElementById('modal-title').textContent = '📅 '+titulo;
+  document.getElementById('modal-date-wrap').style.display='block';
+  const inp = document.getElementById('modal-date');
+  inp.type = 'date';
+  inp.value = (state.ipva && state.ipva[key]) ? state.ipva[key] : '';
+  document.getElementById('modal-km-wrap').style.display='none';
+  document.getElementById('modal').style.display='flex';
 }
 
 // ── RENDER HOME ───────────────────────────────────────────────────────────────
@@ -1138,6 +1172,18 @@ function saveModal(){
     renderMaintenance();
     return;
   }
+  if(modalType==='ipvavenc'){
+    const dateVal = document.getElementById('modal-date').value;
+    if(!dateVal){ alert('Informe a data'); return; }
+    if(!state.ipva) state.ipva={};
+    state.ipva[modalIPVAKey] = dateVal;
+    document.getElementById('modal-date').type = 'month';
+    saveState();
+    closeModal();
+    renderAll();
+    showPage('ipva');
+    return;
+  }
   const date = document.getElementById('modal-date').value;
   if(!date){alert('Informe a data');return;}
   const [y,m] = date.split('-');
@@ -1172,12 +1218,26 @@ function renderIPVA(){
 
   VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
     const st = ipvaStatus(v);
-    const ipvaPago = state.ipva && state.ipva[v.id+'_ipva'];
-    const licPago  = state.ipva && state.ipva[v.id+'_licenc'];
+    const ipvaPago  = state.ipva && state.ipva[v.id+'_ipva'];
+    const licPago   = state.ipva && state.ipva[v.id+'_licenc'];
+    const ipvaVenc  = state.ipva && state.ipva[v.id+'_ipva_venc'];
+    const licVenc   = state.ipva && state.ipva[v.id+'_licenc_venc'];
     const bclass = st==='pago'?'bo':st==='vencida'?'bd':st==='atencao'?'bw':'bo';
     const blabel = st==='pago'?'✅ Tudo Pago':st==='vencida'?'⚠️ Pendente':st==='atencao'?'📅 Este mês':'✅ Em dia';
     const statusColor = st==='pago'?'var(--ok)':st==='vencida'?'var(--danger)':st==='atencao'?'var(--warn)':'var(--ok)';
-    const statusText = st==='pago'?'IPVA e Licenciamento pagos':st==='vencida'?'Pendente — regularizar':st==='atencao'?'Vence em breve':'Em dia';
+
+    const vencRow = (key, tipo, label, pago, vencDate) => {
+      const cd = vencCountdown(vencDate, !!pago);
+      const btnLabel = vencDate ? '📅 Editar' : '📅 Definir';
+      return `<div class="ipva-row" style="background:#f8f9fa;padding:8px 16px">
+        <span class="ipva-lbl" style="font-size:11px;color:var(--muted)">${label}</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <span class="ipva-val" style="font-size:12px">${cd || '<span style="color:var(--muted)">—</span>'}</span>
+          <button onclick="openIPVAVencModal('${key}','${label}')" style="background:white;border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--primary);white-space:nowrap">${btnLabel}</button>
+        </div>
+      </div>`;
+    };
+
     html += `<div class="card">
       <div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px">
         <span style="font-size:28px">${v.icon}</span>
@@ -1188,22 +1248,24 @@ function renderIPVA(){
         <span class="badge ${bclass}">${blabel}</span>
       </div>
       <div class="ipva-row"><span class="ipva-lbl">Final da placa</span><span class="ipva-val">${v.plateEnd}</span></div>
-      <div class="ipva-row"><span class="ipva-lbl">Mês do IPVA</span><span class="ipva-val">${MF[v.ipvaMonth-1]}</span></div>
-      <div class="ipva-row"><span class="ipva-lbl">Vencimento ${TODAY.getFullYear()}</span><span class="ipva-val" style="color:${statusColor}">${ipvaMonthStr(v)}</span></div>
-      ${v.ipvaTypes.includes('ipva') ? `<div class="ipva-row">
-        <span class="ipva-lbl">IPVA</span>
-        <span class="ipva-val" style="color:${ipvaPago?'var(--ok)':statusColor}">${ipvaPago?'✅ Pago em '+ipvaPago.paidAt:'⏳ Pendente'}</span>
-      </div>` : ''}
+      ${v.ipvaTypes.includes('ipva') ? `
+        <div class="ipva-row">
+          <span class="ipva-lbl">IPVA</span>
+          <span class="ipva-val" style="color:${ipvaPago?'var(--ok)':statusColor}">${ipvaPago?'✅ Pago em '+ipvaPago.paidAt:'⏳ Pendente'}</span>
+        </div>
+        ${vencRow(v.id+'_ipva_venc','ipva','Vencimento IPVA', ipvaPago, ipvaVenc)}
+      ` : ''}
       <div class="ipva-row">
         <span class="ipva-lbl">Licenciamento (CRLV)</span>
         <span class="ipva-val" style="color:${licPago?'var(--ok)':statusColor}">${licPago?'✅ Pago em '+licPago.paidAt:'⏳ Pendente'}</span>
       </div>
+      ${vencRow(v.id+'_licenc_venc','licenc','Vencimento Licenciamento', licPago, licVenc)}
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
         ${v.ipvaTypes.includes('ipva') ? `
-        ${ipvaPago
-          ? `<button class="btn-done done-now" style="width:100%;justify-content:center" onclick="undoIPVAPago('${v.id}','ipva')">↩️ Desfazer IPVA (pago em ${ipvaPago.paidAt})</button>`
-          : `<button class="btn-done" style="width:100%;justify-content:center" onclick="openIPVAModal('${v.id}','ipva','💳 IPVA — ${v.name}')">💳 Marcar IPVA como Pago</button>`
-        }` : ''}
+          ${ipvaPago
+            ? `<button class="btn-done done-now" style="width:100%;justify-content:center" onclick="undoIPVAPago('${v.id}','ipva')">↩️ Desfazer IPVA (pago em ${ipvaPago.paidAt})</button>`
+            : `<button class="btn-done" style="width:100%;justify-content:center" onclick="openIPVAModal('${v.id}','ipva','💳 IPVA — ${v.name}')">💳 Marcar IPVA como Pago</button>`
+          }` : ''}
         ${licPago
           ? `<button class="btn-done done-now" style="width:100%;justify-content:center" onclick="undoIPVAPago('${v.id}','licenc')">↩️ Desfazer Licenciamento (pago em ${licPago.paidAt})</button>`
           : `<button class="btn-done" style="width:100%;justify-content:center" onclick="openIPVAModal('${v.id}','licenc','📄 Licenciamento (CRLV) — ${v.name}')">📄 Marcar Licenciamento (CRLV) como Pago</button>`
