@@ -748,21 +748,23 @@ function markBoatRegPago(){
 
 function ipvaStatus(v){
   if(!v.hasIPVA) return null;
-  if(state.ipva && state.ipva[v.id]) return 'pago';
+  const ipvaPago = state.ipva && state.ipva[v.id+'_ipva'];
+  const licPago  = state.ipva && state.ipva[v.id+'_licenc'];
+  if(ipvaPago && licPago) return 'pago';
   if(TODAY.getMonth()+1 > v.ipvaMonth) return 'vencida';
   if(TODAY.getMonth()+1 === v.ipvaMonth) return 'atencao';
   if(v.ipvaMonth - (TODAY.getMonth()+1) <= 2) return 'atencao';
   return 'ok';
 }
 
-function markIPVAPago(vid){
+function markIPVAPago(vid, tipo){
   if(!state.ipva) state.ipva = {};
-  const v = VEHICLES.find(x=>x.id===vid);
-  if(state.ipva[vid]){
-    delete state.ipva[vid];
+  const key = vid + '_' + tipo;
+  if(state.ipva[key]){
+    delete state.ipva[key];
   } else {
     const now = TODAY;
-    state.ipva[vid] = {paidAt: MS[now.getMonth()]+'/'+now.getFullYear(), ts: Date.now()};
+    state.ipva[key] = {paidAt: MS[now.getMonth()]+'/'+now.getFullYear(), ts: Date.now()};
   }
   saveState();
   renderAll();
@@ -978,11 +980,12 @@ function renderIPVA(){
 
   VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
     const st = ipvaStatus(v);
-    const paid = state.ipva && state.ipva[v.id];
+    const ipvaPago  = state.ipva && state.ipva[v.id+'_ipva'];
+    const licPago   = state.ipva && state.ipva[v.id+'_licenc'];
     const bclass = st==='pago'?'bo':st==='vencida'?'bd':st==='atencao'?'bw':'bo';
-    const blabel = st==='pago'?'✅ Pago':st==='vencida'?'⚠️ Vencido':st==='atencao'?'📅 Este mês':'✅ Em dia';
+    const blabel = st==='pago'?'✅ Tudo Pago':st==='vencida'?'⚠️ Pendente':st==='atencao'?'📅 Este mês':'✅ Em dia';
     const statusColor = st==='pago'?'var(--ok)':st==='vencida'?'var(--danger)':st==='atencao'?'var(--warn)':'var(--ok)';
-    const statusText = st==='pago'?`PAGO em ${paid.paidAt}`:st==='vencida'?'REGULARIZAR URGENTE':st==='atencao'?'Vence em breve':'Em dia';
+    const statusText = st==='pago'?'IPVA e Licenciamento pagos':st==='vencida'?'Pendente — regularizar':st==='atencao'?'Vence em breve':'Em dia';
     html += `<div class="card">
       <div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px">
         <span style="font-size:28px">${v.icon}</span>
@@ -995,11 +998,20 @@ function renderIPVA(){
       <div class="ipva-row"><span class="ipva-lbl">Final da placa</span><span class="ipva-val">${v.plateEnd}</span></div>
       <div class="ipva-row"><span class="ipva-lbl">Mês do IPVA</span><span class="ipva-val">${MF[v.ipvaMonth-1]}</span></div>
       <div class="ipva-row"><span class="ipva-lbl">Vencimento ${TODAY.getFullYear()}</span><span class="ipva-val" style="color:${statusColor}">${ipvaMonthStr(v)}</span></div>
-      <div class="ipva-row"><span class="ipva-lbl">Licenciamento (CRLV)</span><span class="ipva-val">Junto ao IPVA</span></div>
-      <div class="ipva-row"><span class="ipva-lbl">Status</span><span class="ipva-val" style="color:${statusColor}">${statusText}</span></div>
-      <div style="padding:12px 16px">
-        <button class="btn-done${paid?' done-now':''}" style="width:100%;justify-content:center" onclick="markIPVAPago('${v.id}')">
-          ${paid ? '↩️ Desfazer pagamento' : '💳 Marcar IPVA + Licenciamento como Pago'}
+      <div class="ipva-row">
+        <span class="ipva-lbl">IPVA</span>
+        <span class="ipva-val" style="color:${ipvaPago?'var(--ok)':statusColor}">${ipvaPago?'✅ Pago em '+ipvaPago.paidAt:'⏳ Pendente'}</span>
+      </div>
+      <div class="ipva-row">
+        <span class="ipva-lbl">Licenciamento (CRLV)</span>
+        <span class="ipva-val" style="color:${licPago?'var(--ok)':statusColor}">${licPago?'✅ Pago em '+licPago.paidAt:'⏳ Pendente'}</span>
+      </div>
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn-done${ipvaPago?' done-now':''}" style="width:100%;justify-content:center" onclick="markIPVAPago('${v.id}','ipva')">
+          ${ipvaPago?'↩️ Desfazer IPVA':'💳 Marcar IPVA como Pago'}
+        </button>
+        <button class="btn-done${licPago?' done-now':''}" style="width:100%;justify-content:center" onclick="markIPVAPago('${v.id}','licenc')">
+          ${licPago?'↩️ Desfazer Licenciamento':'📄 Marcar Licenciamento (CRLV) como Pago'}
         </button>
       </div>
     </div>`;
