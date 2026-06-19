@@ -326,14 +326,14 @@ const VEHICLES = [
        parts:['Fluido DOT 4 — 250ml'],
        kmDetail:'Independente de km',
        timeDetail:'A cada 24 meses — verificar data'},
-      {id:'l_arrefec',name:'Líquido de Arrefecimento',icon:'🌡️',
-       intervalKm:48000,intervalMonths:48,lastKm:null,lastDateStr:'Desconhecida',
-       nextKm:72000,nextDateRef:8,
-       status:'ok',priority:1,
-       desc:'Mistura 50/50 água destilada + anticongelante. Capacidade: ~1,15L. Inspecionar nível no reservatório a cada 6.000km. Substituir a cada 4 anos ou 48.000km.',
-       parts:['Anticongelante Yamaha ou equiv. (1L)'],
-       kmDetail:'Próximo: ~72.000km',
-       timeDetail:'A cada 48.000km ou 48 meses'},
+      {id:'l_embreagem',name:'Folga da Alavanca de Embreagem',icon:'🤜',
+       intervalKm:3000,intervalMonths:6,lastKm:null,lastDateStr:'Desconhecida',
+       nextKm:63000,nextDateRef:3,
+       status:'verificar',priority:1,
+       desc:'Folga livre na extremidade da alavanca: 10–15mm. Ajuste pelo parafuso no punho ou no terminal do cabo junto ao motor. Verificar desgaste e estiramento do cabo.',
+       parts:['Cabo de embreagem (se necessário)'],
+       kmDetail:'A cada 3.000km ou 6 meses',
+       timeDetail:'Verificar junto à troca de óleo'},
       {id:'l_pneus',name:'Verificação dos Pneus',icon:'⭕',
        intervalKm:null,intervalMonths:1,lastKm:null,lastDateStr:'Mensal',
        nextKm:null,nextDateRef:0,
@@ -901,6 +901,12 @@ function fmtDateBR(iso){
   return d+'/'+m+'/'+y;
 }
 
+function autoVencISO(v, nextYear){
+  const y = nextYear ? TODAY.getFullYear()+1 : TODAY.getFullYear();
+  const lastDay = new Date(y, v.ipvaMonth, 0).getDate(); // last day of ipvaMonth
+  return `${y}-${String(v.ipvaMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+}
+
 function vencCountdown(iso, pago){
   if(!iso) return null;
   if(pago) return `<span style="color:var(--ok)">✅ Pago</span>`;
@@ -1226,15 +1232,17 @@ function renderIPVA(){
     const blabel = st==='pago'?'✅ Tudo Pago':st==='vencida'?'⚠️ Pendente':st==='atencao'?'📅 Este mês':'✅ Em dia';
     const statusColor = st==='pago'?'var(--ok)':st==='vencida'?'var(--danger)':st==='atencao'?'var(--warn)':'var(--ok)';
 
-    const vencRow = (key, tipo, label, pago, vencDate) => {
-      const cd = vencCountdown(vencDate, !!pago);
-      const btnLabel = vencDate ? '📅 Editar' : '📅 Definir';
+    const vencRow = (label, pago) => {
+      let display;
+      if(pago){
+        const nextISO = autoVencISO(v, true);
+        display = `<span style="color:var(--ok)">✅ Pago em ${pago.paidAt}</span> <small style="color:var(--muted)">• Próx: ${vencCountdown(nextISO, false)}</small>`;
+      } else {
+        display = vencCountdown(autoVencISO(v, false), false);
+      }
       return `<div class="ipva-row" style="background:#f8f9fa;padding:8px 16px">
         <span class="ipva-lbl" style="font-size:11px;color:var(--muted)">${label}</span>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-          <span class="ipva-val" style="font-size:12px">${cd || '<span style="color:var(--muted)">—</span>'}</span>
-          <button onclick="openIPVAVencModal('${key}','${label}')" style="background:white;border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--primary);white-space:nowrap">${btnLabel}</button>
-        </div>
+        <span class="ipva-val" style="font-size:12px;text-align:right">${display}</span>
       </div>`;
     };
 
@@ -1249,17 +1257,9 @@ function renderIPVA(){
       </div>
       <div class="ipva-row"><span class="ipva-lbl">Final da placa</span><span class="ipva-val">${v.plateEnd}</span></div>
       ${v.ipvaTypes.includes('ipva') ? `
-        <div class="ipva-row">
-          <span class="ipva-lbl">IPVA</span>
-          <span class="ipva-val" style="color:${ipvaPago?'var(--ok)':statusColor}">${ipvaPago?'✅ Pago em '+ipvaPago.paidAt:'⏳ Pendente'}</span>
-        </div>
-        ${vencRow(v.id+'_ipva_venc','ipva','Vencimento IPVA', ipvaPago, ipvaVenc)}
-      ` : ''}
-      <div class="ipva-row">
-        <span class="ipva-lbl">Licenciamento (CRLV)</span>
-        <span class="ipva-val" style="color:${licPago?'var(--ok)':statusColor}">${licPago?'✅ Pago em '+licPago.paidAt:'⏳ Pendente'}</span>
-      </div>
-      ${vencRow(v.id+'_licenc_venc','licenc','Vencimento Licenciamento', licPago, licVenc)}
+        ${vencRow('IPVA '+TODAY.getFullYear(), ipvaPago)}
+      ` : '<div class="ipva-row"><span class="ipva-lbl">IPVA</span><span class="ipva-val" style="color:var(--muted)">Isento (reboque simples — SP)</span></div>'}
+      ${vencRow('Licenciamento (CRLV)', licPago)}
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
         ${v.ipvaTypes.includes('ipva') ? `
           ${ipvaPago
@@ -1318,25 +1318,26 @@ function renderForecast(){
   // Build events
   const events = [];
 
-  // IPVA overdue
+  // IPVA / Licenciamento
   VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
     const st = ipvaStatus(v);
-    if(st==='pago') return; // já pago, não mostrar no forecast
+    if(st==='pago') return;
+    const dueISO = autoVencISO(v, false);
+    const dueDate = new Date(dueISO+'T00:00:00');
+    const monthKey = `${TODAY.getFullYear()}-${String(v.ipvaMonth).padStart(2,'0')}`;
+    const label = v.ipvaTypes.includes('ipva') ? 'IPVA + Licenciamento' : 'Licenciamento (CRLV)';
     if(st==='vencida'){
       events.push({
-        date: new Date(TODAY.getFullYear(), v.ipvaMonth-1, 1),
-        monthKey: `${TODAY.getFullYear()}-${String(v.ipvaMonth).padStart(2,'0')}`,
-        title:`IPVA + Licenciamento — Regularizar`,
-        sub:`${v.icon} ${v.name} • Placa final ${v.plateEnd} • MÊS ${v.ipvaMonth} — JÁ VENCEU`,
-        level:'danger',
-        past:true
+        date: dueDate, monthKey,
+        title:`${label} — Regularizar`,
+        sub:`${v.icon} ${v.name} • Placa final ${v.plateEnd} • Venceu em ${fmtDateBR(dueISO)}`,
+        level:'danger', past:true
       });
     } else if(st==='atencao'){
       events.push({
-        date: new Date(TODAY.getFullYear(), v.ipvaMonth-1, 1),
-        monthKey: `${TODAY.getFullYear()}-${String(v.ipvaMonth).padStart(2,'0')}`,
-        title:`IPVA + Licenciamento`,
-        sub:`${v.icon} ${v.name} • Placa final ${v.plateEnd}`,
+        date: dueDate, monthKey,
+        title: label,
+        sub:`${v.icon} ${v.name} • Placa final ${v.plateEnd} • ${fmtDateBR(dueISO)} • ${vencCountdown(dueISO, false)}`,
         level:'warn'
       });
     }
