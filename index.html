@@ -254,7 +254,8 @@ const VEHICLES = [
     avgKmMonth:1500,
     hasHours:false,
     hasIPVA:true,
-    ipvaMonth:5,
+    ipvaMonth:2,
+    licencMonth:9,
     ipvaTypes:['ipva','licenc'],
     boatReg:false,
     specs:[
@@ -558,6 +559,7 @@ const VEHICLES = [
     hasHours:false,
     hasIPVA:true,
     ipvaMonth:7,
+    licencMonth:10,
     ipvaTypes:['licenc'],
     boatReg:false,
     specs:[
@@ -641,6 +643,7 @@ const VEHICLES = [
     hasHours:false,
     hasIPVA:true,
     ipvaMonth:4,
+    licencMonth:9,
     ipvaTypes:['licenc'],
     boatReg:false,
     specs:[
@@ -861,10 +864,15 @@ function ipvaStatus(v){
   if(!v.hasIPVA) return null;
   const allPaid = v.ipvaTypes.every(t => state.ipva && state.ipva[v.id+'_'+t]);
   if(allPaid) return 'pago';
-  if(TODAY.getMonth()+1 > v.ipvaMonth) return 'vencida';
-  if(TODAY.getMonth()+1 === v.ipvaMonth) return 'atencao';
-  if(v.ipvaMonth - (TODAY.getMonth()+1) <= 2) return 'atencao';
-  return 'ok';
+  let worst = 'ok';
+  v.ipvaTypes.forEach(tipo => {
+    if(state.ipva && state.ipva[v.id+'_'+tipo]) return;
+    const iso = autoVencISO(v, false, tipo);
+    const days = Math.floor((new Date(iso+'T00:00:00') - TODAY) / 86400000);
+    if(days < 0 && worst !== 'vencida') worst = 'vencida';
+    else if(days >= 0 && days <= 60 && worst === 'ok') worst = 'atencao';
+  });
+  return worst;
 }
 
 let modalType = 'manut';
@@ -901,10 +909,11 @@ function fmtDateBR(iso){
   return d+'/'+m+'/'+y;
 }
 
-function autoVencISO(v, nextYear){
+function autoVencISO(v, nextYear, tipo){
+  const month = tipo === 'licenc' ? (v.licencMonth || v.ipvaMonth) : v.ipvaMonth;
   const y = nextYear ? TODAY.getFullYear()+1 : TODAY.getFullYear();
-  const lastDay = new Date(y, v.ipvaMonth, 0).getDate(); // last day of ipvaMonth
-  return `${y}-${String(v.ipvaMonth).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  const lastDay = new Date(y, month, 0).getDate();
+  return `${y}-${String(month).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
 }
 
 function vencCountdown(iso, pago){
@@ -1220,7 +1229,7 @@ function saveModal(){
 
 function renderIPVA(){
   let html = '';
-  html += `<div class="inote">📌 <strong>Estado de São Paulo:</strong> O mês de vencimento segue o último dígito da placa (5 = Maio, 7 = Julho, 4 = Abril). Reboques simples (carretinha de barco, de fazenda) são <strong>isentos de IPVA</strong> em SP — pagam apenas o licenciamento anual (CRLV) no Detran-SP. Embarcações não pagam IPVA — registro na Capitania dos Portos é federal.</div>`;
+  html += `<div class="inote">📌 <strong>Estado de São Paulo — Calendários separados:</strong> O <strong>IPVA</strong> é pago no início do ano (janeiro–maio, conforme SEFAZ-SP). O <strong>Licenciamento (CRLV)</strong> vence entre julho e outubro via DETRAN-SP. Reboques simples são <strong>isentos de IPVA</strong> — pagam apenas o licenciamento.</div>`;
 
   VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
     const st = ipvaStatus(v);
@@ -1232,13 +1241,13 @@ function renderIPVA(){
     const blabel = st==='pago'?'✅ Tudo Pago':st==='vencida'?'⚠️ Pendente':st==='atencao'?'📅 Este mês':'✅ Em dia';
     const statusColor = st==='pago'?'var(--ok)':st==='vencida'?'var(--danger)':st==='atencao'?'var(--warn)':'var(--ok)';
 
-    const vencRow = (label, pago) => {
+    const vencRow = (label, pago, tipo) => {
       let display;
       if(pago){
-        const nextISO = autoVencISO(v, true);
+        const nextISO = autoVencISO(v, true, tipo);
         display = `<span style="color:var(--ok)">✅ Pago em ${pago.paidAt}</span> <small style="color:var(--muted)">• Próx: ${vencCountdown(nextISO, false)}</small>`;
       } else {
-        display = vencCountdown(autoVencISO(v, false), false);
+        display = vencCountdown(autoVencISO(v, false, tipo), false);
       }
       return `<div class="ipva-row" style="background:#f8f9fa;padding:8px 16px">
         <span class="ipva-lbl" style="font-size:11px;color:var(--muted)">${label}</span>
@@ -1257,9 +1266,9 @@ function renderIPVA(){
       </div>
       <div class="ipva-row"><span class="ipva-lbl">Final da placa</span><span class="ipva-val">${v.plateEnd}</span></div>
       ${v.ipvaTypes.includes('ipva') ? `
-        ${vencRow('IPVA '+TODAY.getFullYear(), ipvaPago)}
+        ${vencRow('IPVA '+TODAY.getFullYear(), ipvaPago, 'ipva')}
       ` : '<div class="ipva-row"><span class="ipva-lbl">IPVA</span><span class="ipva-val" style="color:var(--muted)">Isento (reboque simples — SP)</span></div>'}
-      ${vencRow('Licenciamento (CRLV)', licPago)}
+      ${vencRow('Licenciamento (CRLV)', licPago, 'licenc')}
       <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
         ${v.ipvaTypes.includes('ipva') ? `
           ${ipvaPago
@@ -1320,27 +1329,32 @@ function renderForecast(){
 
   // IPVA / Licenciamento
   VEHICLES.filter(v=>v.hasIPVA).forEach(v=>{
-    const st = ipvaStatus(v);
-    if(st==='pago') return;
-    const dueISO = autoVencISO(v, false);
-    const dueDate = new Date(dueISO+'T00:00:00');
-    const monthKey = `${TODAY.getFullYear()}-${String(v.ipvaMonth).padStart(2,'0')}`;
-    const label = v.ipvaTypes.includes('ipva') ? 'IPVA + Licenciamento' : 'Licenciamento (CRLV)';
-    if(st==='vencida'){
-      events.push({
-        date: dueDate, monthKey,
-        title:`${label} — Regularizar`,
-        sub:`${v.icon} ${v.name} • Placa final ${v.plateEnd} • Venceu em ${fmtDateBR(dueISO)}`,
-        level:'danger', past:true
-      });
-    } else if(st==='atencao'){
-      events.push({
-        date: dueDate, monthKey,
-        title: label,
-        sub:`${v.icon} ${v.name} • Placa final ${v.plateEnd} • ${fmtDateBR(dueISO)} • ${vencCountdown(dueISO, false)}`,
-        level:'warn'
-      });
-    }
+    if(ipvaStatus(v)==='pago') return;
+    v.ipvaTypes.forEach(tipo => {
+      const paid = state.ipva && state.ipva[v.id+'_'+tipo];
+      if(paid) return;
+      const dueISO = autoVencISO(v, false, tipo);
+      const dueDate = new Date(dueISO+'T00:00:00');
+      const days = Math.floor((dueDate - TODAY) / 86400000);
+      const month = tipo === 'licenc' ? (v.licencMonth||v.ipvaMonth) : v.ipvaMonth;
+      const monthKey = `${TODAY.getFullYear()}-${String(month).padStart(2,'0')}`;
+      const label = tipo === 'ipva' ? 'IPVA' : 'Licenciamento (CRLV)';
+      if(days < 0){
+        events.push({
+          date: dueDate, monthKey,
+          title:`${label} — Regularizar`,
+          sub:`${v.icon} ${v.name} • Placa final ${v.plateEnd} • Venceu em ${fmtDateBR(dueISO)}`,
+          level:'danger', past:true
+        });
+      } else if(days <= 180){
+        events.push({
+          date: dueDate, monthKey,
+          title: label,
+          sub:`${v.icon} ${v.name} • Placa final ${v.plateEnd} • ${fmtDateBR(dueISO)} • ${vencCountdown(dueISO, false)}`,
+          level: days <= 60 ? 'warn' : 'info'
+        });
+      }
+    });
   });
 
   // Maintenance due NOW (vencidas)
